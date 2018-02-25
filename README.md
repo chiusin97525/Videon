@@ -22,6 +22,7 @@ This is an application that allows video creators to upload their contents and o
 - Live streaming from creators: allow creators to broadcast real time contents to subscribers
 
 ### Technologies
+- PayPal sandbox: for testing this application to mock PayPal transctions
 
 ### Top 5 technical challenges
 - On the fly switching resolution: allow switching resolution during video playback

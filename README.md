@@ -26,14 +26,14 @@ This is an application that allows video creators to upload their contents and o
 -- also allow subscribers to chat(post text) while creator is streaming
 ### Technologies
 - NodeJs: used for testing and developing our application
-- NPM packages (some packages may or may not be used; list is subject to change): 
-> express & express-session: to handle HTTP requests
-> videojs contrib hls: for video playback and live streaming 
-> file upload thumbnail: creates a thumbnail given an image/video
-> paypalxo: an easy way to use PayPal API
-> google sign in: allows a user to login via a google account
-> mongodb: store user information and videos
 - PayPal sandbox: for testing this application to mock PayPal transctions
+- NPM packages (some packages may or may not be used; list is subject to change): 
+- express & express-session: to handle HTTP requests
+- videojs contrib hls: for video playback and live streaming 
+- file upload thumbnail: creates a thumbnail given an image/video
+- paypalxo: an easy way to use PayPal API
+- google sign in: allows a user to login via a google account
+- mongodb: store user information and videos
 
 ### Top 5 Technical Challenges
 - On the Fly Switching Resolution: allow switching resolution during video playback
@@ -41,3 +41,4 @@ This is an application that allows video creators to upload their contents and o
 - Payment System: ensure sercurity on user's information
 - NPM Packages: finding and utilizing NPM packages that work well with our application
 - Frontend: designing and building the frontend that is easy to use/navigate
+

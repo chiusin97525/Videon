@@ -1,3 +1,4 @@
+
 # Blackbird
 
 ## Videon
@@ -26,11 +27,12 @@ This is an application that allows video creators to upload their contents and o
 ### Technologies
 - NodeJs: used for testing and developing our application
 - NPM packages (some packages may or may not be used; list is subject to change): 
--- express & express-session: to handle HTTP requests
--- videojs contrib hls: for video playback and live streaming 
--- file upload thumbnail: creates a thumbnail given an image/video
--- paypalxo: an easy way to use PayPal API
--- google sign in: allows a user to login via a google account
+> express & express-session: to handle HTTP requests
+> videojs contrib hls: for video playback and live streaming 
+> file upload thumbnail: creates a thumbnail given an image/video
+> paypalxo: an easy way to use PayPal API
+> google sign in: allows a user to login via a google account
+> mongodb: store user information and videos
 - PayPal sandbox: for testing this application to mock PayPal transctions
 
 ### Top 5 Technical Challenges

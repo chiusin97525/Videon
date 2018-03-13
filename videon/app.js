@@ -12,11 +12,17 @@ const session = require('express-session');
 const MongoClient = require('mongodb').MongoClient;
 const app = express();
 
+// server settings
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
+
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+
 app.use(express.static('frontend'));
-var upload = multer({ dest: path.join(__dirname, 'uploads') });
+//var upload = multer({ dest: path.join(__dirname, 'uploads') });
 
 
 /* ignore this
@@ -38,28 +44,20 @@ clientPromise.then(client => {
 */
 
 
+// connection to mLab mongodb host with 500mb
+var uri = "mongodb://ds213239.mlab.com:13239/videon"
 
-// using a free mongodb host with 500mb for testing
-var uri = "mongodb://user:user@videon-shard-00-00-cs9ho.mongodb.net:27017,videon-shard-00-01-cs9ho.mongodb.net:27017,videon-shard-00-02-cs9ho.mongodb.net:27017/test?ssl=true&replicaSet=videon-shard-0&authSource=admin";
-MongoClient.connect(uri, function(err, db) {
+MongoClient.connect(uri, {user: "admin", pass: "admin@"}, function(err, db) {
 	if (err) console.log(err);
-	//db.collection('test', {strict:true}, function(err, collection) {});
-	console.log(db);
-	console.log("success");
-  	db.close();
+    else{
+    	//db.collection('test', {strict:true}, function(err, collection) {});
+    	console.log(db);
+    	console.log("success");
+      	db.close();
+      }
 });
 
 // CREATE
 // READ
 // UPDATE
 // DELETE
-
-
-// HTTP for development
-const http = require('http');
-const PORT = 3000;
-
-http.createServer(app).listen(PORT, function (err) {
-    if (err) console.log(err);
-    else console.log("HTTP server on http://localhost:%s", PORT);
-});

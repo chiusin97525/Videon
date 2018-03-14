@@ -1,0 +1,45 @@
+#topnav {
+	width: 100%;
+	background-color: #202020;
+	border-bottom: 1px solid #202020;
+	display: inline-flex;
+}
+
+#videon {
+	padding: 10px 0px 10px 16px;
+	margin: 0;
+	font-size: 36px;
+	color: white;
+	background-color: #202020;
+}
+
+#searchbar {
+	display: inline-block;
+	float: left;
+	padding-left: 56px;
+}
+
+#search {
+	padding-left: 5px;
+	padding-right: 5px;
+	margin: 15px 10px 10px 10px;
+	line-height: 30px;
+	font-size: 18px;
+	display: inline;
+	float: left;
+}
+
+#search_button {
+	margin: 15px 0px 0px 0px;
+	width: 34px;
+	height: 34px;
+	border: 0;
+	background: none;
+	box-shadow: none;
+	border-radius: 0px;
+	background-image: url("../media/search.png");
+	background-size: 100%;
+	background-repeat: no-repeat;
+	display:inline;
+	float: left;
+}

@@ -5,7 +5,6 @@ const multer  = require('multer');
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
-const crypto = require('crypto');
 const cookie = require('cookie');
 const session = require('express-session');
 const forceSsl = require('force-ssl-heroku');
@@ -26,15 +25,16 @@ app.use(express.static('frontend'));
 
 
 var uri;
-var dbUsername = "admin";
-var dbPassword = "admin@";
+var database;
 var select_database = function(){
     if(process.env.NODE_ENV === "production"){
         // mlab mongodb server
-        uri = "mongodb://ds213239.mlab.com:13239/videon";
+        uri = "mongodb://admin:adminkernel@ds213239.mlab.com:13239/videon";
+        dbName = "videon";
     }else{
         // Altas mongodb server for testing
-        uri = "mongodb+srv://videon0-rs9ub.mongodb.net/test";
+        uri = "mongodb+srv://admin:adminkernel@videon0-rs9ub.mongodb.net/test";
+        dbName = "test";
     }
 }
 select_database();
@@ -48,16 +48,25 @@ var force_https = function(){
 force_https();
 
 
-// connection to mLab mongodb host
-
-
-MongoClient.connect(uri, {user: dbUsername, pass: dbPassword}, function(err, db) {
-	if (err) console.log(err);
-    else{
-    	console.log("DB connection success");
-        user.signIn("sin", "pass", db);
-      	db.close();
-      }
+// SIGN IN/OUT/UP
+app.post('/signup/', function (req, res, next) {
+    if (!('username' in req.body)) return res.status(400).end('username is missing');
+    if (!('password' in req.body)) return res.status(400).end('password is missing');
+    var username = req.body.username;
+    var password = req.body.password;
+    MongoClient.connect(uri, function(err, client) {
+        if (err){
+            console.log(err);
+            return res.status(500).end(err);
+        }else{
+            console.log("DB connection success");
+            const database = client.db(dbName);
+            user.signUp(res, username, password, database, function(){
+                // close the client connection to the database
+                client.close();
+            });
+          }
+    });
 });
 
 // CREATE

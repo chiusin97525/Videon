@@ -38,6 +38,7 @@ app.use(session({
 
 
 app.use(function(req, res, next){
+    //console.log(req.session.username);
     var username = (req.session.username)? req.session.username : '';
     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
           path : '/', 
@@ -69,6 +70,7 @@ select_database();
 var force_https = function(){
     if(process.env.NODE_ENV === "production"){
         app.use(forceSsl);
+        session.cookie.secure = true;
     }
 }
 force_https();
@@ -83,6 +85,12 @@ var checkEmail = function(req, res, next){
      if (!validator.isEmail(req.body.email)) return res.status(400).end(ERRMSG_BAD_EMAIL);
      next();
 }
+
+var isAuthenticated = function(req, res, next) {
+    console.log("IS:" + req.session.username);
+    if (!req.session.username) return res.status(401).end("access denied");
+    next();
+};
 //----------------------------------------------------------------------------------
 
 // SIGN IN/OUT/UP
@@ -109,6 +117,7 @@ app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
 });
 
 // curl -X POST -d "username=admin&password=admin" -c cookie.txt http://192.168.1.107:5000/login/
+
 app.post('/login/',checkUsername, function (req, res, next) {
     if (!('username' in req.body)) return res.status(400).end('username is missing');
     if (!('password' in req.body)) return res.status(400).end('password is missing');
@@ -121,6 +130,7 @@ app.post('/login/',checkUsername, function (req, res, next) {
             console.log("DB connection success");
             const database = client.db(dbName);
             user.login(req, res, userInfo, database, function(){
+                console.log(req.session.username);
                 // close the client connection to the database
                 client.close();
             });
@@ -133,7 +143,26 @@ app.get('/logout/', function(req, res, next){
     user.logout(req, res, cookie);
 });
 
-// CREATE
+// GET
+
+// curl -b cookie.txt http://192.168.1.107:5000/api/sin/creators/
+app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){
+    MongoClient.connect(uri, function(err, client) {
+        if (err){
+            console.log(err);
+            return res.status(500).end(err);
+        }else{
+            console.log("DB connection success");
+            const database = client.db(dbName);
+            user.getCreators(req, res, req.params.username, database, function(){
+                // close the client connection to the database
+                client.close();
+            });
+          }
+    });
+    
+});
+
 // READ
 // UPDATE
 // DELETE

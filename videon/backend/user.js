@@ -2,7 +2,9 @@
 module.exports = (function(){
     "use strict";
     const crypto = require('crypto');
-    const collectionName = "users";
+    const session = require('express-session');
+    const collectionUsers = "users";
+    const collectionSubs = "subscriptions";
     var user = {};
 
     const ERRMSG_ACCESS_DENIED = "access denied";
@@ -15,7 +17,7 @@ module.exports = (function(){
     }
 
     function response(res, statusCode, ending, callback){
-        callback;
+        callback();
         return res.status(statusCode).end(ending);
     }
 
@@ -26,7 +28,7 @@ module.exports = (function(){
         var password = userInfo.password;
         var email = userInfo.email;
         // get the collection
-        var collection = database.collection(collectionName);
+        var collection = database.collection(collectionUsers);
         collection.findOne({_id: username}, function(err, userObj){
             // error checking
             if (err) return response(res, 500, err, callback);
@@ -36,9 +38,9 @@ module.exports = (function(){
             var salt = crypto.randomBytes(16).toString('base64');
             var saltedHash = generateHash(password, salt);
             // add the user to database
-            collection.update({_id: username},{_id: username, saltedHash: saltedHash, salt: salt, email: email}, {upsert: true}, function(err){
+            collection.update({_id: username},{_id: username, saltedHash: saltedHash, salt: salt, email: email, isCreator: false}, {upsert: true}, function(err){
                 if (err) return response(res, 500, err, callback);
-                callback;
+                callback();
                 return res.json("user " + username + " signed up");
             });
         });
@@ -48,12 +50,14 @@ module.exports = (function(){
         var username = userInfo.username;
         var password = userInfo.password;
         // get the collection
-        var collection = database.collection(collectionName);
+        var collection = database.collection(collectionUsers);
         collection.findOne({_id: username}, function(err, userObj){
             if(err) return response(res, 500, err, callback);
             if(!userObj) return response(res, 401, "user " + username + " not found", callback);
             if (userObj.saltedHash !== generateHash(password, userObj.salt)) return response(res, 401, ERRMSG_ACCESS_DENIED, callback);
-            req.session.username = user._id;
+            // start a session
+            req.session.username = userObj._id;
+            callback();
             return res.redirect("/");
         });
     }
@@ -67,7 +71,19 @@ module.exports = (function(){
         return res.redirect("/");
     }
 
-
+    user.getCreators = function(req, res, username, database, callback){
+        var collection = database.collection(collectionSubs);
+        collection.find({subscriber: "sin"}, {creator:1, _id: 0}).toArray(function(err, creators){
+            if(err) return response(res, 500, err, callback);
+            var creatorsLst = [];
+            console.log(creators);
+            creators.forEach(function(entry){
+                creatorsLst.push(entry.creator);
+            });
+            callback();
+            return res.json(creatorsLst);
+        });
+    }
 
 
     return user;

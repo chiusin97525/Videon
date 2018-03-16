@@ -7,13 +7,13 @@
 
         function submit(){
             console.log(document.querySelector("form").checkValidity());
-            if (document.querySelector(".form").checkValidity()){
+            if (document.querySelector("form").checkValidity()){
                 var username = document.querySelector("form [name=username]").value;
                 var password =document.querySelector("form [name=password]").value;
-                /*api.login(username, password, function(err, res){
+                api.login(username, password, function(err, res){
                     if (err) document.querySelector('.alert').innerHTML = err;
                     else window.location = '/';
-                });*/
+                });
                 //window.location = '/';
             }
         }

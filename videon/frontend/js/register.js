@@ -13,11 +13,12 @@
                 var password =document.querySelector("form [name=password]").value;
                 var repassword =document.querySelector("form [name=repassword]").value;
                 if (password !== repassword) document.querySelector('.alert').innerHTML = "Passwords do not match.";
-                //else
-                /*api.login(username, password, function(err, res){
-                    if (err) document.querySelector('.alert').innerHTML = err;
-                    else window.location = '/';
-                });*/
+                else {
+                    api.login(username, password, function(err, res){
+                        if (err) document.querySelector('.alert').innerHTML = err;
+                        else window.location = '/';
+                    });
+                }
                 //window.location = '/';
             }
         }

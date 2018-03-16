@@ -21,7 +21,7 @@ module.exports = (function(){
 
 //------------------------------------------------------------------------------------
 
-    user.register = function(res, req, userInfo, database, callback){
+    user.register = function(req, res, userInfo, database, callback){
         var username = userInfo.username;
         var password = userInfo.password;
         var email = userInfo.email;
@@ -44,8 +44,7 @@ module.exports = (function(){
         });
     }
 
-
-    user.login = function(res, req, userInfo, database, callback){
+    user.login = function(req, res, userInfo, database, callback){
         var username = userInfo.username;
         var password = userInfo.password;
         // get the collection
@@ -57,6 +56,15 @@ module.exports = (function(){
             req.session.username = user._id;
             return res.redirect("/");
         });
+    }
+
+    user.logout = function(req, res, cookie){
+        req.session.destroy();
+        res.setHeader('Set-Cookie', cookie.serialize('username', '', {
+              path : '/', 
+              maxAge: 60 * 60 * 24 * 7 
+        }));
+        return res.redirect("/");
     }
 
 

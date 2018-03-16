@@ -100,7 +100,7 @@ app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
         }else{
             console.log("DB connection success");
             const database = client.db(dbName);
-            user.register(res, req, userInfo, database, function(){
+            user.register(req, res, userInfo, database, function(){
                 // close the client connection to the database
                 client.close();
             });
@@ -120,12 +120,17 @@ app.post('/login/',checkUsername, function (req, res, next) {
         }else{
             console.log("DB connection success");
             const database = client.db(dbName);
-            user.login(res, req, userInfo, database, function(){
+            user.login(req, res, userInfo, database, function(){
                 // close the client connection to the database
                 client.close();
             });
           }
     });
+});
+
+// curl -b cookie.txt -c cookie.txt http://192.168.1.107:5000/logout/
+app.get('/logout/', function(req, res, next){
+    user.logout(req, res, cookie);
 });
 
 // CREATE

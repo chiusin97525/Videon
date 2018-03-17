@@ -163,6 +163,24 @@ app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){
     
 });
 
+// curl -b cookie.txt http://192.168.1.107:5000/api/admin/subscriptions/
+app.get('/api/:username/subscriptions/', isAuthenticated, function(req, res, next){
+    MongoClient.connect(uri, function(err, client) {
+        if (err){
+            console.log(err);
+            return res.status(500).end(err);
+        }else{
+            console.log("DB connection success");
+            const database = client.db(dbName);
+            user.getSubscriber(req, res, req.params.username, database, function(){
+                // close the client connection to the database
+                client.close();
+            });
+          }
+    });
+    
+});
+
 // READ
 // UPDATE
 // DELETE

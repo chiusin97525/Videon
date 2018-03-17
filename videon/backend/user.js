@@ -73,7 +73,7 @@ module.exports = (function(){
 
     user.getCreators = function(req, res, username, database, callback){
         var collection = database.collection(collectionSubs);
-        collection.find({subscriber: "sin"}, {creator:1, _id: 0}).toArray(function(err, creators){
+        collection.find({subscriber: username}, {fields:{creator:1, _id: 0}}).toArray(function(err, creators){
             if(err) return response(res, 500, err, callback);
             var creatorsLst = [];
             console.log(creators);
@@ -83,6 +83,24 @@ module.exports = (function(){
             callback();
             return res.json(creatorsLst);
         });
+    }
+
+    user.getSubscriber = function(req, res, username, database, callback){
+        var collection = database.collection(collectionSubs);
+        collection.find({creator: username}, {fields:{subscriber:1, _id: 0}}).toArray(function(err, subscribers){
+            if(err) return response(res, 500, err, callback);
+            var subscribersLst = [];
+            console.log(subscribers);
+            subscribers.forEach(function(entry){
+                subscribersLst.push(entry.subscriber);
+            });
+            callback();
+            return res.json(subscribersLst);
+        });
+    }
+
+    user.addSubscriber = function(){
+        
     }
 
 

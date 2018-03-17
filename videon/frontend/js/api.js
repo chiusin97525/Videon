@@ -24,6 +24,14 @@ var api = (function(){
         email : String
         isCreator: Boolean
     */
+
+    module.getCurrentUser = function(){
+        var l = document.cookie.split("username=");
+        if (l.length > 1) return l[1];
+        return null;
+    }
+
+
     module.register = function(email, username, password, callback) {
         // post ; {email: email, username:username, password:password}; something like /register
         send("POST", '/register/', {email:email, username:username, password:password}, callback);

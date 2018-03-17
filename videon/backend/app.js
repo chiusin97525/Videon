@@ -48,7 +48,7 @@ app.use(function(req, res, next){
 });
 
 // frontend files
-app.use(express.static('frontend'));
+app.use(express.static('../frontend'));
 
 
 var uri;

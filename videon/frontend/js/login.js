@@ -5,6 +5,10 @@
 
     window.addEventListener('load', function(){
 
+        if (api.getCurrentUser() != "") {
+            location.href = "/";
+        }
+
         function submit(){
             console.log(document.querySelector("form").checkValidity());
             if (document.querySelector("form").checkValidity()){

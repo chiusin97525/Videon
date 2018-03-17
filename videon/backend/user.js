@@ -13,7 +13,7 @@ module.exports = (function(){
     function generateHash (password, salt){
         var hash = crypto.createHmac('sha512', salt);
         hash.update(password);
-        return hash.digest('base64');;
+        return hash.digest('base64');
     }
 
     function response(res, statusCode, ending, callback){
@@ -58,7 +58,8 @@ module.exports = (function(){
             // start a session
             req.session.username = userObj._id;
             callback();
-            return res.redirect("/");
+            //return res.redirect("/");
+            return res.json("user " + username + " signed in");
         });
     }
 

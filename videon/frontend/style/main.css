@@ -42,7 +42,7 @@ html, body, #container, .sidenav, #content {
 	padding: 5px 5px 5px 5px;
 }
 
-.form {
+form {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -67,4 +67,10 @@ html, body, #container, .sidenav, #content {
 .redirect {
 	font-size: 10px;
 	padding: 5px 5px 5px 5px;
+}
+
+
+.alert{
+	font-size: 10px;
+    color: red;
 }

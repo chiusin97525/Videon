@@ -73,6 +73,12 @@ module.exports = (function(){
         return res.redirect("/");
     }
 
+    // returns an user object on success
+    user.getUser = function(username, database, callback){
+        var collection = database.collection(collectionUsers);
+        collection.findOne({_id: username}, callback(err, userObj)});
+    }
+
     user.getCreators = function(req, res, username, database, callback){
         var collection = database.collection(collectionSubs);
         collection.find({subscriber: username}, {fields:{creator:1, _id: 0}}).toArray(function(err, creators){

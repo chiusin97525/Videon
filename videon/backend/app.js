@@ -16,7 +16,7 @@ const app = express();
 
 // require custom modules
 const user = require('./user');
-const user = require('./video');
+const video = require('./video');
 
 // custom messages
 const ERRMSG_BAD_USERNAME = "Bad username input";
@@ -82,15 +82,15 @@ select_database();
 var select_storage_server = function(){
     if(process.env.NODE_ENV === "production"){
         cloudinary.config({ 
-          cloud_name: 'videonstorageserver', 
-          api_key: '897296893562352', 
-          api_secret: 'YuGk3JnctgsDobyJOCSM5Ws7SVY' 
-        });
-    }else{
-        cloudinary.config({ 
           cloud_name: 'hlp3qspme', 
           api_key: '561236676358831', 
           api_secret: 'VQga8h18map_-dvJMeiBbnHsj8s' 
+        });
+    }else{
+        cloudinary.config({ 
+          cloud_name: 'videonstorageserver', 
+          api_key: '897296893562352', 
+          api_secret: 'YuGk3JnctgsDobyJOCSM5Ws7SVY' 
         });
     }
 }
@@ -139,7 +139,6 @@ app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
 });
 
 // curl -X POST -d "username=admin&password=admin" -c cookie.txt http://192.168.1.107:5000/login/
-
 app.post('/login/',checkUsername, function (req, res, next) {
     if (!('username' in req.body)) return res.status(400).end('username is missing');
     if (!('password' in req.body)) return res.status(400).end('password is missing');
@@ -204,6 +203,7 @@ app.get('/api/:username/subscriptions/', isAuthenticated, function(req, res, nex
 });
 
 // UPLOAD
+// curl -b cookie.txt -X POST -F "title=extella" -F "file=@extella_loop.mp4" -F "description=Loop" http://192.168.1.107:5000/api/admin/uploads/
 app.post('/api/:username/uploads/', isAuthenticated, upload.single("file"), function(req, res, next){
     if (!('title' in req.body)) return res.status(400).end('title is missing');
     if (!('description' in req.body)) return res.status(400).end('description is missing');

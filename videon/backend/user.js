@@ -76,7 +76,7 @@ module.exports = (function(){
     // returns an user object on success
     user.getUser = function(username, database, callback){
         var collection = database.collection(collectionUsers);
-        collection.findOne({_id: username}, callback(err, userObj)});
+        collection.findOne({_id: username}, callback);
     }
 
     user.getCreators = function(req, res, username, database, callback){

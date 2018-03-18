@@ -5,7 +5,7 @@
 
     window.addEventListener('load', function(){
 
-        if (api.getCurrentUser() != "") {
+        if (api.getCurrentUser()) {
             location.href = "/";
         }
 
@@ -18,7 +18,6 @@
                     if (err) document.querySelector('.alert').innerHTML = err;
                     else window.location = '/';
                 });
-                //window.location = '/';
             }
         }
 

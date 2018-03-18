@@ -44,7 +44,7 @@ var api = (function(){
 
     module.logout = function(callback) {
         // get ; nothing ; something like /logout/
-        send("POST", '/logout/', null, callback);
+        send("GET", '/logout/', null, callback);
     };
 
     module.getCreators = function(username, callback) {

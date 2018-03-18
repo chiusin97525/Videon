@@ -69,12 +69,12 @@ module.exports = (function(){
               path : '/', 
               maxAge: 60 * 60 * 24 * 7 
         }));
-        return res.redirect("/");
+        return res.json("user logged out");
     }
 
     user.getCreators = function(req, res, username, database, callback){
         var collection = database.collection(collectionSubs);
-        collection.find({subscriber: "sin"}, {creator:1, _id: 0}).toArray(function(err, creators){
+        collection.find({subscriber: username}, {creator:1, _id: 0}).toArray(function(err, creators){
             if(err) return response(res, 500, err, callback);
             var creatorsLst = [];
             console.log(creators);

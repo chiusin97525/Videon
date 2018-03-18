@@ -8,6 +8,7 @@ module.exports = (function(){
     var user = {};
 
     const ERRMSG_ACCESS_DENIED = "access denied";
+    const ERRMSG_USER_NOT_FOUND = "user not found";
 
 
     function generateHash (password, salt){
@@ -100,8 +101,33 @@ module.exports = (function(){
         });
     }
 
-    user.addSubscriber = function(){
-        
+    // manually add a user as subscriber without having the user to pay
+    user.addSubscriber = function(req, res, creator, username, database, callback){
+        var subCollection = database.collection(collectionSubs);
+        var userCollection = database.collection(collectionUsers);
+        // check if there is such subscription already
+        subCollection.findOne({_id: username+"-"+creator}, function(err, subObj){
+            if(err) return response(res, 500, err, callback);
+            // if the user is already subscribed
+            if(subObj) return response(res, 400, "user " + username + " already subscribed", callback);
+            // check if creator exists
+            userCollection.findOne({_id: creator}, function(err, creatorObj){
+                if(err) return response(res, 500, err, callback);
+                // if no such user
+                if(!creatorObj) return response(res, 404, "user " + creator + " not found", callback);
+                // if the user is not a creator
+                if(!creatorObj.isCreator) return response(res, 403, "Not a creator", callback);
+                userCollection.findOne({_id: username}, function(err, userObj){
+                    if(err) return response(res, 500, err, callback);
+                    if(!creatorObj) return response(res, 404, "user " + username + " not found", callback);
+                    var id = username + "-" + creator;
+                    subCollection.insert({_id: id, subscriber: username, creator: creator}, function(err){
+                        if(err) return response(res, 500, err, callback);
+                        return res.json("user " + username + " added as subscriber");
+                    });
+                });
+            });
+        });
     }
 
 

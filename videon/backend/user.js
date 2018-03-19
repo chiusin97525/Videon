@@ -93,7 +93,7 @@ module.exports = (function(){
         });
     }
 
-    user.getSubscriber = function(req, res, username, database, callback){
+    user.getSubscribers = function(req, res, username, database, callback){
         var collection = database.collection(collectionSubs);
         collection.find({creator: username}, {fields:{subscriber:1, _id: 0}}).toArray(function(err, subscribers){
             if(err) return response(res, 500, err, callback);
@@ -108,7 +108,7 @@ module.exports = (function(){
     }
 
     // manually add a user as subscriber without having the user to pay
-    user.addSubscriber = function(req, res, creator, username, database, callback){
+    user.add = function(req, res, creator, username, database, callback){
         var subCollection = database.collection(collectionSubs);
         var userCollection = database.collection(collectionUsers);
         // check if there is such subscription already
@@ -135,6 +135,11 @@ module.exports = (function(){
             });
         });
     }
+
+    // user.isSubscribed = function(req, res, subscriber, creator, database, callback){
+    //     var subCollection = database.collection(collectionSubs);
+        
+    // }
 
 
     return user;

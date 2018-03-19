@@ -22,5 +22,24 @@ module.exports = (function(){
         });
     }
 
+    video.getVideo = function(res, req, videoId, database, callback){
+        var collection = database.collection(collectionVideos);
+        collection.findOne({_id: videoId}, function(err, videoObj){
+            if(err) return response(res, 500, err, callback);
+            if(!videoObj) return response(res, 404, "video not found", callback);
+            callback();
+            return res.json(videoObj);
+        });
+    }
+
+    video.getAllVideosFromCreator = function(res, req, username, database, callback){
+        var collection = database.collection(collectionVideos);
+        collection.find({_id: videoId}).toArray(function(err, videoObjs){
+            if(err) return response(res, 500, err, callback);
+            callback();
+            return res.json(videoObjs);
+        });
+    }
+
     return video;
 })();

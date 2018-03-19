@@ -242,7 +242,31 @@ app.post('/api/:username/uploads/', isAuthenticated, upload.single("file"), func
 
     });
 });
-// GET
 
+// GET
+app.get('/api/:videoId/', isAuthenticated, function(req, res, next){
+    MongoClient.connect(uri, function(err, client){
+        if (err) return res.status(500).end(err);        
+        console.log("DB connection success");
+        const database = client.db(dbName);
+        video.getVideo(res, req, req.params.videoId, database, function(){
+            // close the client connection to the database
+            client.close();
+        });
+    });
+});
+
+
+app.get('/api/:username/videos/', isAuthenticated, function(req, res, next){
+    MongoClient.connect(uri, function(err, client){
+        if (err) return res.status(500).end(err);        
+        console.log("DB connection success");
+        const database = client.db(dbName);
+        video.getAllVideosFromCreator(res, req, req.params.username, database, function(){
+            // close the client connection to the database
+            client.close();
+        });
+    });
+});
 // UPDATE
 // DELETE

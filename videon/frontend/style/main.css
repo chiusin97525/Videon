@@ -64,6 +64,10 @@ form {
 	background-color: #252525;
 }
 
+#upload_button {
+	width: 210px;
+}
+
 .redirect {
 	font-size: 10px;
 	padding: 5px 5px 5px 5px;
@@ -72,4 +76,12 @@ form {
 .alert{
 	font-size: 10px;
     color: red;
+}
+
+#upload_container{
+	width: 600px;
+}
+
+#video_description, #video_title, #video_file {
+	width: 300px;
 }

@@ -72,6 +72,20 @@ module.exports = (function(){
         return res.json("user logged out");
     }
 
+    user.getAllCreators = function(req, res, database, callback) {
+        var collection = database.collection(collectionUsers);
+        collection.find({isCreator: true}).toArray(function(err, creators) {
+            if (err) return response(res, 500 ,err, callback);
+            var creatorsLst = [];
+            console.log(creators);
+            creators.forEach(function(entry){
+                creatorsLst.push(entry._id);
+            });
+            callback();
+            return res.json(creatorsLst);
+        });
+    }
+
     user.getCreators = function(req, res, username, database, callback){
         var collection = database.collection(collectionSubs);
         collection.find({subscriber: username}, {creator:1, _id: 0}).toArray(function(err, creators){

@@ -1,3 +1,26 @@
 #content {
+    overflow: auto;
 }
 
+.creator {
+    margin: 40px 10px 10px 40px;
+    padding: 10px 10px 10px 10px;
+    background-color: #252525;
+    border: 1px solid #252525;
+    width: 200px;
+    height: 105px;
+    text-align: center;
+    float: left;
+}
+
+.creator div {
+    color: white;
+    padding: 5px 0px 5px 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.creator:hover {
+    background-color: #3f3f3f;
+}

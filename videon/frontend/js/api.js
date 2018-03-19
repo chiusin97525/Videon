@@ -52,6 +52,11 @@ var api = (function(){
         send("GET", '/api/' + username + '/creators/', null, callback);
     };
 
+    module.getAllCreators = function(callback) {
+        // get ; something like api/creators
+        send("GET", '/api/creators', null, callback);
+    };
+
     module.getSubscribers = function(username, callback) {
         // get ; something like api/:username/subscriptions
         // returns empty list if not a creator (?)
@@ -67,8 +72,8 @@ var api = (function(){
         //
     };
 
-    module.uploadVideo = function(username, video, callback) {
-        // post ; {username:username}
+    module.uploadVideo = function(title, description, video, callback) {
+        // post ; 
     };
 
     module.getVideo = function(videoId, callback) {

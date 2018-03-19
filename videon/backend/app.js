@@ -145,6 +145,22 @@ app.get('/logout/', function(req, res, next){
 
 // GET
 
+app.get('/api/creators/', isAuthenticated, function(req, res, next) {
+    MongoClient.connect(uri, function(err, client) {
+        if (err) {
+            console.log(err);
+            return res.status(500).end(err);
+        } else {
+            console.log("DB connection success");
+            const database = client.db(dbName);
+            user.getAllCreators(req, res, database, function(){
+                // close the client connection to the database
+                client.close();
+            });
+        }
+    });
+});
+
 // curl -b cookie.txt http://192.168.1.107:5000/api/sin/creators/
 app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){
     MongoClient.connect(uri, function(err, client) {

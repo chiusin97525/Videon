@@ -16,6 +16,25 @@ var api = (function(){
     }
 
 
+    function sendFiles(method, url, data, callback){
+        var formdata = new FormData();
+        Object.keys(data).forEach(function(key){
+            var value = data[key];
+            formdata.append(key, value);
+        });
+        var xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            if (xhr.status !== 200) callback("[" + xhr.status + "]" + xhr.responseText, null);
+            else {
+                var res = JSON.parse(xhr.responseText);
+                callback(null, res);
+            }
+        };
+        xhr.open(method, url, true);
+        xhr.send(formdata);
+    }
+
+
     var module = {};
 
     /*
@@ -69,11 +88,13 @@ var api = (function(){
     };
 
     module.addSubscriber = function(subscriber, creator, callback) {
-        //
+        // change url to a better one later
+        send("POST", '/api/', {subscriber: subscriber, creator:creator}, callback);
     };
 
-    module.uploadVideo = function(title, description, video, callback) {
+    module.uploadVideo = function(username, title, description, video, callback) {
         // post ; 
+        sendFiles("POST", '/api/' + username + '/uploads/', {title:title, description:description, file:video}, callback);
     };
 
     module.getVideo = function(videoId, callback) {

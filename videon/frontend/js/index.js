@@ -31,8 +31,11 @@
                 <div class="sidenav_text">${username}</div>
             </div>
             <button id="upload_button" class="btn">Upload</button>
+            <button id="my_page_button" class="btn">My Page</button>
         `;
         document.getElementById("upload_button").addEventListener("click", function(e) {
+            // ---------TODO--------------
+            // need an api function to get user object and check if they're creator in order to go to uploading page
             var content = document.getElementById("content");
             content.innerHTML = `
                 <div id="upload_container" class="form_container">
@@ -51,14 +54,28 @@
                 var title = document.getElementById("video_title").value;
                 var file = document.getElementById("video_file").files[0];
                 var description = document.getElementById("video_description").value;
-                api.uploadVideo(title, description, file, function(err) {
+                var username = api.getCurrentUser();
+                api.uploadVideo(username, title, description, file, function(err) {
                     if (err) console.error(err);
                     else console.log("upload success");
                 });
             });
         });
 
-
+        document.getElementById("my_page_button").addEventListener("click", function(e) {
+            var content = document.getElementById("content");
+            content.innerHTML = "";
+            api.getAllVideoObjects(api.getCurrentUser(), function(err, videoObjs) {
+                if (err) console.error(err);
+                else {
+                    content.innerHTML = `
+                        <div id="video_container"></div>
+                        <div id="videos_list"></div>    
+                    `;
+                    videoObjs.forEach(insertVideoToContent);
+                }
+            });
+        });
     }
 
     function refreshSubscriptions(user) {
@@ -72,19 +89,44 @@
         });
     }
 
+    function insertVideoToContent (videoObj) {
+        var list = document.getElementById("videos_list");
+        var video = document.createElement('div');
+        video.innerHTML = `
+            <div class="select_video">
+                <img src="media/play_button.png" class="play_button" alt="play">
+                <img src="media/temp/jpg" class="thumbnail" alt="thumbnail">
+                <div class="video_title">${videoObject.title}</div>
+            </div>
+        `;
+
+        list.appendChild(video);
+        // add event listener for clicking on the play button
+    }
+
     function insertCreatorToContent (username) {
         var creator = document.createElement('div');
         creator.class = "creator";
         creator.innerHTML = `
             <div class="creator">
                 <div class="creator_name">${username}</div>
-                <button class="btn">Visit Page</button>
-                <button class="btn">Subscribe</button>
+                <button class="visit_page btn">Visit Page</button>
+                <button class="subscribe btn">Subscribe</button>
             </div>
         `;
+        document.getElementById("content").appendChild(creator);
         // -------------------------------TODO------------------------------- 
         // need to add event listeners for visit page and subscribe buttons
-        document.getElementById("content").appendChild(creator);
+        document.querySelector(".subscribe").addEventListener("click", function(e){
+            var current_user = api.getCurrentUser();
+            api.addSubscriber(current_user, username, function(err) {
+                if (err) console.error(err);
+                else {
+                    e.srcElement.innerHTML = "Subscribed!";
+                    e.srcElement.disabled = true;
+                }
+            });
+        });
     }
 
     function loadCreators() {

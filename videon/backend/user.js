@@ -93,9 +93,9 @@ module.exports = (function(){
         collection.findOne({_id: username}, callback);
     }
 
-    user.getCreators = function(req, res, username, database, callback){
+    user.getCreators = function(req, res, data, database, callback){
         var collection = database.collection(collectionSubs);
-        collection.find({subscriber: username}, {fields:{creator:1, _id: 0}}).toArray(function(err, creators){
+        collection.find({subscriber: data.username}, {fields:{creator:1, _id: 0}}).toArray(function(err, creators){
             if(err) return response(res, 500, err, callback);
             var creatorsLst = [];
             console.log(creators);
@@ -107,9 +107,9 @@ module.exports = (function(){
         });
     }
 
-    user.getSubscribers = function(req, res, username, database, callback){
+    user.getSubscribers = function(req, res, data, database, callback){
         var collection = database.collection(collectionSubs);
-        collection.find({creator: username}, {fields:{subscriber:1, _id: 0}}).toArray(function(err, subscribers){
+        collection.find({creator: data.username}, {fields:{subscriber:1, _id: 0}}).toArray(function(err, subscribers){
             if(err) return response(res, 500, err, callback);
             var subscribersLst = [];
             console.log(subscribers);
@@ -122,14 +122,16 @@ module.exports = (function(){
     }
 
     // manually add a user as subscriber without having the user to pay
-    user.add = function(req, res, creator, username, database, callback){
+    user.addSubscriber = function(req, res, data, database, callback){
         var subCollection = database.collection(collectionSubs);
         var userCollection = database.collection(collectionUsers);
+        var subscriber = data.subscriber;
+        var creator = data.creator;
         // check if there is such subscription already
-        subCollection.findOne({_id: username+"-"+creator}, function(err, subObj){
+        subCollection.findOne({_id: subscriber+"-"+creator}, function(err, subObj){
             if(err) return response(res, 500, err, callback);
             // if the user is already subscribed
-            if(subObj) return response(res, 400, "user " + username + " already subscribed", callback);
+            if(subObj) return response(res, 400, "user " + subscriber + " already subscribed", callback);
             // check if creator exists
             userCollection.findOne({_id: creator}, function(err, creatorObj){
                 if(err) return response(res, 500, err, callback);
@@ -137,23 +139,27 @@ module.exports = (function(){
                 if(!creatorObj) return response(res, 404, "user " + creator + " not found", callback);
                 // if the user is not a creator
                 if(!creatorObj.isCreator) return response(res, 403, "Not a creator", callback);
-                userCollection.findOne({_id: username}, function(err, userObj){
+                userCollection.findOne({_id: subscriber}, function(err, userObj){
                     if(err) return response(res, 500, err, callback);
-                    if(!creatorObj) return response(res, 404, "user " + username + " not found", callback);
-                    var id = username + "-" + creator;
-                    subCollection.insert({_id: id, subscriber: username, creator: creator}, function(err){
+                    if(!userObj) return response(res, 404, "user " + subscriber + " not found", callback);
+                    var id = subscriber + "-" + creator;
+                    subCollection.insert({_id: id, subscriber: subscriber, creator: creator}, function(err){
                         if(err) return response(res, 500, err, callback);
-                        return res.json("user " + username + " added as subscriber");
+                        return res.json("user " + subscriber + " added as subscriber");
                     });
                 });
             });
         });
     }
 
-    // user.isSubscribed = function(req, res, subscriber, creator, database, callback){
-    //     var subCollection = database.collection(collectionSubs);
-        
-    // }
+    user.isSubscribed = function(req, res, subscriber, creator, database, callback){
+        var subCollection = database.collection(collectionSubs);
+        subCollection.findOne({_id: subscriber+"-"+creator}, function(err, result){
+            if(err) return response(res, 500, err, callback);
+            if(!result) return false;
+            return true;
+        });
+    }
 
 
     return user;

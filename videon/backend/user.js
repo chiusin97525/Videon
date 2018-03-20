@@ -138,10 +138,11 @@ module.exports = (function(){
         });
     }
 
-    user.isSubscribed = function(req, res, subscriber, creator, database, callback){
+    user.isSubscribed = function(data, database){
+        var subscriber = data.subscriber;
+        var creator = data.creator;
         var subCollection = database.collection(collectionSubs);
         subCollection.findOne({_id: subscriber+"-"+creator}, function(err, result){
-            if(err) return response(res, 500, err, callback);
             if(!result) return false;
             return true;
         });

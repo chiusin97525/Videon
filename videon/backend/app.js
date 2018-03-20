@@ -281,15 +281,21 @@ app.get('/api/:videoId/', isAuthenticated, function(req, res, next){
 });
 
 
-app.get('/api/:username/videos/', isAuthenticated, function(req, res, next){
+// get all the videos object given an creator's username
+app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
+    var creator = escapeInput(req.params.creator);
     MongoClient.connect(uri, function(err, client){
         if (err) return res.status(500).end(err);        
         console.log("DB connection success");
         const database = client.db(dbName);
-        video.getAllVideosFromCreator(res, req, escapeInput(req.params.username), database, function(){
-            // close the client connection to the database
-            client.close();
-        });
+        if(creator === req.session.username || user.isSubscribed({creator: creator, subscriber:req.session.username})){
+            video.getAllVideosFromCreator(res, req, creator, database, function(){
+                // close the client connection to the database
+                client.close();
+            });
+        }else{
+            return res.status(403).end("not a subscriber of creator: " + creator);
+        }
     });
 });
 

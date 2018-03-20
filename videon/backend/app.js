@@ -208,7 +208,7 @@ app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){
 // curl -b cookie.txt http://192.168.1.107:5000/api/admin/subscriptions/
 app.get('/api/:username/subscriptions/', isAuthenticated, function(req, res, next){
     var data = {username: escape(req.params.username)};
-    user.getSubscriber(req, res, data, database, function(){});
+    user.getSubscribers(req, res, data, database, function(){});
     
 });
 

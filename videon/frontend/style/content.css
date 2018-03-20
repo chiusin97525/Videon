@@ -24,7 +24,10 @@
     text-align: center;
     float: left;
 }
-
+.creator .btn {
+    margin: 10px 10px 10px 10px;
+    line-height: 16px;
+}
 .creator div, .video_title {
     color: white;
     padding: 5px 0px 5px 0px;
@@ -52,8 +55,9 @@
 
 .play_button {
     z-index: 3;
-    width: 100px;
-    height: 100px;
+    width: 100%;
+    height: 100%;
+    display: block;
     position: absolute;
     left: 0;
     right: 0;
@@ -64,11 +68,9 @@
 
 .play_button:hover {
     background-image:url("../media/play_button.png");
-    background-size: 100%;
-    background-repeat: none;
-    position: absolute;
-    left: 0;
-    right: 0;
+    background-size: 100px 100px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .thumbnail {

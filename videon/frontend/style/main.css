@@ -60,7 +60,7 @@ form {
 	border-radius: 2px;
 }
 
-.btn:hover {
+.btnEffect:hover {
 	background-color: #252525;
 }
 
@@ -84,4 +84,8 @@ form {
 
 #video_description, #video_title, #video_file {
 	width: 300px;
+}
+
+.test {
+	opacity: 0.2;
 }

@@ -34,9 +34,11 @@ module.exports = (function(){
 
     video.getAllVideosFromCreator = function(res, req, username, database, callback){
         var collection = database.collection(collectionVideos);
-        collection.find({_id: videoId}).toArray(function(err, videoObjs){
+        collection.find({poster: username}).toArray(function(err, videoObjs){
             if(err) return response(res, 500, err, callback);
             callback();
+            console.log("VIDEO OBJECTS UNDERNEATH");
+            console.log(videoObjs);
             return res.json(videoObjs);
         });
     }

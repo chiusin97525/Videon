@@ -6,13 +6,6 @@
     function insertUser (curr_user) {
         var new_creator = document.createElement('div');
         new_creator.class = "user";
-        /*var avatar = document.createElement('img');
-        avatar.src ="media/default.jpg";
-        avatar.class="profile_picture";
-        avatar.alt = "profile_picture";
-        var username = document.createElement('div');
-        username.class = "sidenav_text";
-        username.innerHTML = `${curr_user}`;*/
         new_creator.innerHTML = `
             <div class="user">
                 <img src="media/default.jpg" class="profile_picture" alt="profile_picture">
@@ -30,8 +23,8 @@
                 <img src="media/default.jpg" class="profile_picture" alt="profile_picture">
                 <div class="sidenav_text">${username}</div>
             </div>
-            <button id="upload_button" class="btn">Upload</button>
-            <button id="my_page_button" class="btn">My Page</button>
+            <button id="upload_button" class="btn btnEffect">Upload</button>
+            <button id="my_page_button" class="btn btnEffect">My Page</button>
         `;
         document.getElementById("upload_button").addEventListener("click", function(e) {
             // ---------TODO--------------
@@ -44,7 +37,7 @@
                         <input type="text" id="video_title" class="form_element" name="title"/ placeholder="Video Title">
                         <input type="file" id="video_file" class="form_element" name="file"/>
                         <textarea id="video_description" class="form_element" rows=3 placeholder="Video Description"></textarea>
-                        <input type="submit" id="submit_video" class="btn" value="Upload"/>
+                        <input type="submit" id="submit_video" class="btn btnEffect" value="Upload"/>
                     </form>    
                 </div>
             `;
@@ -65,17 +58,17 @@
         document.getElementById("my_page_button").addEventListener("click", function(e) {
             var content = document.getElementById("content");
             content.innerHTML = "";
-            api.getAllVideoObjects(api.getCurrentUser(), function(err, videoObjs) {
+            /*api.getAllVideoObjects(api.getCurrentUser(), function(err, videoObjs) {
                 if (err) console.error(err);
-                else {
+                else {*/
                     content.innerHTML = `
                         <div id="video_container"></div>
                         <div id="videos_list"></div>    
                     `;
-                    //var videoObjs = [{title:"Hellodsaklnfkasdjfbnlkasjbflkasdjbfaskljdfbnlkjasdbflkbajbsdflkajsbdf"}, {title:"World!"}];
+                    var videoObjs = [{title:"Hellodsaklnfkasdjfbnlkasjbflkasdjbfaskljdfbnlkjasdbflkbajbsdflkajsbdf"}, {title:"World!"}];
                     videoObjs.forEach(insertVideoToContent);
-                }
-            });
+                //}
+            //});
         });
     }
 
@@ -107,26 +100,36 @@
         // add event listener for clicking on the play button
     }
 
-    function insertCreatorToContent (username) {
+    function insertCreatorToContent (username, userCreatorList) {
         var creator = document.createElement('div');
         creator.class = "creator";
         creator.innerHTML = `
             <div class="creator">
                 <div class="creator_name">${username}</div>
-                <button class="visit_page btn">Visit Page</button>
-                <button class="subscribe btn">Subscribe</button>
+                <button class="visit_page btn btnEffect">Visit Page</button>
+                <button id="${username}" class="subscribe btn btnEffect">Subscribe</button>
             </div>
         `;
         document.getElementById("content").appendChild(creator);
+        if (userCreatorList.indexOf(username) != -1) {
+            var button = document.getElementById(username);
+            button.innerHTML = "Subscribed! ✓";
+            button.disabled = true;
+            button.style.color = "#00FF0E";
+            button.classList.remove("btnEffect");
+        }
         // -------------------------------TODO------------------------------- 
         // need to add event listeners for visit page and subscribe buttons
-        document.querySelector(".subscribe").addEventListener("click", function(e){
+        document.getElementById(username).addEventListener("click", function(e){
             var current_user = api.getCurrentUser();
-            api.addSubscriber(current_user, username, function(err) {
+            api.addSubscriber(username, current_user, function(err) {
                 if (err) console.error(err);
                 else {
-                    e.srcElement.innerHTML = "Subscribed!";
-                    e.srcElement.disabled = true;
+                    e.target.innerHTML = "Subscribed! ✓";
+                    e.target.disabled = true;
+                    e.target.style.color = "#00FF0E";
+                    e.target.classList.remove("btnEffect");
+                    refreshSubscriptions(current_user);
                 }
             });
         });
@@ -136,12 +139,18 @@
         api.getAllCreators(function(err, allCreators) {
             if (err) console.error(err);
             else {
-
-                var user = api.getCurrentUser();
-                var contentPage = document.getElementById("content");
-                contentPage.innerHTML = "";
-                allCreators.forEach(insertCreatorToContent);
-
+                api.getCreators(api.getCurrentUser(), function(err, creatorList) {
+                    if (err) console.error(err);
+                    else {
+                        var user = api.getCurrentUser();
+                        var contentPage = document.getElementById("content");
+                        contentPage.innerHTML = "";
+                        //allCreators.forEach(insertCreatorToContent);
+                        for (var i in allCreators) {
+                            insertCreatorToContent(allCreators[i], creatorList);
+                        }
+                    }
+                });
             }
         });
     }

@@ -87,9 +87,9 @@ var api = (function(){
         send("POST", '/api/creators/', {username:username}, callback);
     };
 
-    module.addSubscriber = function(subscriber, creator, callback) {
+    module.addSubscriber = function(creator, subscriber, callback) {
         // change url to a better one later
-        send("POST", '/api/', {subscriber: subscriber, creator:creator}, callback);
+        send("POST", '/api/' + creator + '/addSub/' + subscriber + '/', null, callback);
     };
 
     module.uploadVideo = function(username, title, description, video, callback) {

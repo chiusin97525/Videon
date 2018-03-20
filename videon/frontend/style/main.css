@@ -64,7 +64,7 @@ form {
 	background-color: #252525;
 }
 
-#upload_button {
+#upload_button, #my_page_button {
 	width: 210px;
 }
 

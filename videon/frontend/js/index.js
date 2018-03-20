@@ -72,6 +72,7 @@
                         <div id="video_container"></div>
                         <div id="videos_list"></div>    
                     `;
+                    //var videoObjs = [{title:"Hellodsaklnfkasdjfbnlkasjbflkasdjbfaskljdfbnlkjasdbflkbajbsdflkajsbdf"}, {title:"World!"}];
                     videoObjs.forEach(insertVideoToContent);
                 }
             });
@@ -91,16 +92,18 @@
 
     function insertVideoToContent (videoObj) {
         var list = document.getElementById("videos_list");
-        var video = document.createElement('div');
-        video.innerHTML = `
+        var container = document.createElement('div');
+        container.className = "select_video_container";
+        container.innerHTML = `
             <div class="select_video">
-                <img src="media/play_button.png" class="play_button" alt="play">
-                <img src="media/temp/jpg" class="thumbnail" alt="thumbnail">
-                <div class="video_title">${videoObject.title}</div>
+                <div class="play_button"></div>
+                <img src="media/temp.jpg" class="thumbnail" alt="test">
             </div>
+            <div class="video_title">${videoObj.title}</div>
         `;
 
-        list.appendChild(video);
+
+        list.appendChild(container);
         // add event listener for clicking on the play button
     }
 

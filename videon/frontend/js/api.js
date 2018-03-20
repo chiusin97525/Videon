@@ -102,7 +102,7 @@ var api = (function(){
     };
 
     module.getAllVideoObjects = function(username, callback) {
-
+        send("GET", '/api/' + username + '/videos/', null, callback);
     };
 
     return module;

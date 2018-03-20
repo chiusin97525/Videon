@@ -47,20 +47,35 @@ module.exports = (function(){
         });
     }
 
-    user.login = function(req, res, userInfo, database, callback){
-        var username = userInfo.username;
-        var password = userInfo.password;
+    // user.login = function(req, res, userInfo, database, callback){
+    //     var username = userInfo.username;
+    //     var password = userInfo.password;
+    //     // get the collection
+    //     var collection = database.collection(collectionUsers);
+    //     collection.findOne({_id: username}, function(err, userObj){
+    //         if(err) return response(res, 500, err, callback);
+    //         if(!userObj) return response(res, 401, "user " + username + " not found", callback);
+    //         if (userObj.saltedHash !== generateHash(password, userObj.salt)) return response(res, 401, ERRMSG_ACCESS_DENIED, callback);
+    //         // start a session
+    //         req.session.username = userObj._id;
+    //         callback();
+    //         //return res.redirect("/");
+    //         return res.json("user " + username + " signed in");
+    //     });
+    // }
+
+    user.login = function(data, database, callback){
+        var username = data.username;
+        var password = data.password;
         // get the collection
         var collection = database.collection(collectionUsers);
         collection.findOne({_id: username}, function(err, userObj){
-            if(err) return response(res, 500, err, callback);
-            if(!userObj) return response(res, 401, "user " + username + " not found", callback);
-            if (userObj.saltedHash !== generateHash(password, userObj.salt)) return response(res, 401, ERRMSG_ACCESS_DENIED, callback);
-            // start a session
-            req.session.username = userObj._id;
-            callback();
-            //return res.redirect("/");
-            return res.json("user " + username + " signed in");
+            if (err) return callback(err, userObj);
+            if (!userObj || userObj.saltedHash !== generateHash(password, userObj.salt)){
+                return callback(null, false, "incorrect username or password");
+            }
+            userObj.username = userObj._id;
+            return callback(null, userObj, null);
         });
     }
 

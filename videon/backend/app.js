@@ -39,15 +39,14 @@ app.use(session({
     cookie: {httpOnly: true, sameSite: true}
 }));
 
-app.use(function(req, res, next){
-    //console.log(req.session.username);
-    var username = (req.session.username)? req.session.username : '';
-    res.setHeader('Set-Cookie', cookie.serialize('username', username, {
-          path : '/', 
-          maxAge: 60 * 60 * 24 * 7 // 1 week in number of seconds
-    }));
-    next();
-});
+// app.use(function(req, res, next){
+//     var username = (req.user.username)? req.user.username : '';
+//     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
+//           path : '/', 
+//           maxAge: 60 * 60 * 24 * 7 // 1 week in number of seconds
+//     }));
+//     next();
+// });
 
 // force https when it is in production environment
 var force_https = function(){
@@ -104,11 +103,19 @@ select_storage_server();
 
 
 // third party authentication settings
-// const passport = require('passport');
-// const TwitterStrategy = require('passport-twitter').Strategy;
-// const LocalStrategy = require('passport-local').Strategy;
-// app.use(passport.initialize());
-// app.use(passport.session());
+const passport = require('passport');
+//const TwitterStrategy = require('passport-twitter').Strategy;
+const LocalStrategy = require('passport-local').Strategy;
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(function(username, done) {
+    done(null, JSON.stringify(username));
+});
+
+passport.deserializeUser(function(username, done) {
+  done(null, JSON.parse(username));
+});
 
 // passport.use(new TwitterStrategy({
 //         consumerKey: process.env.TWITTER_CONSUMER_KEY,
@@ -119,22 +126,15 @@ select_storage_server();
 //     }
 // ));
 
-// passport.use(new LocalStrategy(
-//         function(username, password, done){
-//             MongoClient.connect(uri, function(err, client) {
-//                 if (err) return res.status(500).end(err);
-//                 }else{
-//                     console.log("DB connection success");
-//                     const database = client.db(dbName);
-//                     user.login(req, res, userInfo, database, function(){
-//                         console.log(req.session.username);
-//                         // close the client connection to the database
-//                         client.close();
-//                     });
-//                   }
-//             });
-//         }
-//     ));
+passport.use(new LocalStrategy(
+        function(username, password, done){
+            user.login({username: username, password: password}, database, function(err, userObj, msg){
+                if(err) return done(err);
+                if(msg) return done(null, false, {message: msg});
+                return done(null, userObj);
+            });
+        }
+    ));
 
 
 //----------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ var checkEmail = function(req, res, next){
 }
 
 var isAuthenticated = function(req, res, next) {
-    if (!req.session.username) return res.status(401).end("access denied");
+    if (!req.isAuthenticated()) return res.status(401).end("access denied");
     next();
 };
 
@@ -174,8 +174,19 @@ app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
 app.post('/login/',checkUsername, function (req, res, next) {
     if (!('username' in req.body)) return res.status(400).end('username is missing');
     if (!('password' in req.body)) return res.status(400).end('password is missing');
-    var userInfo = {username: req.body.username, password: req.body.password};
-    user.login(req, res, userInfo, database, function(){});
+    // authenticate the user
+    passport.authenticate('local', function(err, userObj, info){
+        if(err) return res.status(500).end(err);
+        if(!userObj) return res.status(403).end(info.message);
+        req.logIn(userObj, function(err){
+            if(err) return res.status(500).end(err);
+            res.setHeader('Set-Cookie', cookie.serialize('username', userObj.username, {
+              path : '/', 
+              maxAge: 60 * 60 * 24 * 7
+            }));
+            return res.json("user " + userObj.username + " signed in");
+        });
+    })(req, res, next);
 });
 
 // curl -b cookie.txt -c cookie.txt http://192.168.1.107:5000/logout/
@@ -206,7 +217,8 @@ app.get('/api/:username/subscriptions/', isAuthenticated, function(req, res, nex
 app.post('/api/:username/uploads/', isAuthenticated, upload.single("file"), function(req, res, next){
     if (!('title' in req.body)) return res.status(400).end('title is missing');
     if (!('description' in req.body)) return res.status(400).end('description is missing');
-    var username = req.session.username;
+    var username = req.user.username;
+    if(username !== req.params.username) return res.status(403).end('username mismatched'); 
     var title = escapeInput(req.body.title);
     var description = escapeInput(req.body.description);
     user.getUser(username, database, function(err, userObj){
@@ -231,10 +243,10 @@ app.get('/api/:videoId/', isAuthenticated, function(req, res, next){
 
 
 // get all the videos object given an creator's username
+// curl -b cookie.txt http://192.168.1.107:5000/api/admin/videos/
 app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
     var creator = escapeInput(req.params.creator);
-    const database = client.db(dbName);
-    if(creator === req.session.username || user.isSubscribed({creator: creator, subscriber:req.session.username})){
+    if(creator === req.user.username || user.isSubscribed({creator: creator, subscriber:req.user.username})){
         video.getAllVideosFromCreator(res, req, creator, database, function(){});
     }else{
         return res.status(403).end("not a subscriber of creator: " + creator);
@@ -247,7 +259,7 @@ app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
 // add a subscriber
 // curl -X POST -b cookie.txt http://192.168.1.107:5000/api/admin/addSub/asdf/
 app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res, next){
-    var creator = req.session.username;
+    var creator = req.user.username;
     var subscriber = escape(req.params.subscriber);
     if(creator !== escape(req.params.creator)) return res.status(403).end("username mismatched");
     var data = {creator: creator, subscriber: subscriber};

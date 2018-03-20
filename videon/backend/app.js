@@ -22,7 +22,6 @@ const video = require('./video');
 const ERRMSG_BAD_USERNAME = "Bad username input";
 const ERRMSG_BAD_EMAIL = "Not a valid email address";
 
-
 // server settings
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
@@ -64,7 +63,7 @@ app.use(express.static('frontend'));
 
 // database server connection setting
 var uri;
-var database;
+var dbName;
 var select_database = function(){
     if(process.env.NODE_ENV === "production"){
         // mlab mongodb server
@@ -77,6 +76,13 @@ var select_database = function(){
     }
 }
 select_database();
+
+var database;
+MongoClient.connect(uri, function(err, client) {
+    if (err) return console.log(err);
+    console.log("Ddatabase connection success");
+    database = client.db(dbName);
+});
 
 // storage server connection setting
 var select_storage_server = function(){
@@ -96,6 +102,41 @@ var select_storage_server = function(){
 }
 select_storage_server();
 
+
+// third party authentication settings
+// const passport = require('passport');
+// const TwitterStrategy = require('passport-twitter').Strategy;
+// const LocalStrategy = require('passport-local').Strategy;
+// app.use(passport.initialize());
+// app.use(passport.session());
+
+// passport.use(new TwitterStrategy({
+//         consumerKey: process.env.TWITTER_CONSUMER_KEY,
+//         consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
+//         callbackURL: process.env.TWITTER_CALLBACK_URL
+//     }, function(token, tokenSecret, profile, callback){
+        
+//     }
+// ));
+
+// passport.use(new LocalStrategy(
+//         function(username, password, done){
+//             MongoClient.connect(uri, function(err, client) {
+//                 if (err) return res.status(500).end(err);
+//                 }else{
+//                     console.log("DB connection success");
+//                     const database = client.db(dbName);
+//                     user.login(req, res, userInfo, database, function(){
+//                         console.log(req.session.username);
+//                         // close the client connection to the database
+//                         client.close();
+//                     });
+//                   }
+//             });
+//         }
+//     ));
+
+
 //----------------------------------------------------------------------------------
 var checkUsername = function(req, res, next) {
     if (!validator.isAlphanumeric(req.body.username)) return res.status(400).end(ERRMSG_BAD_USERNAME);
@@ -109,7 +150,6 @@ var checkEmail = function(req, res, next){
 }
 
 var isAuthenticated = function(req, res, next) {
-    //console.log("IS:" + req.session.username);
     if (!req.session.username) return res.status(401).end("access denied");
     next();
 };
@@ -127,19 +167,7 @@ app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
     if (!('password' in req.body)) return res.status(400).end('password is missing');
     if (!('email' in req.body)) return res.status(400).end('email is missing');
     var userInfo = {username: req.body.username, password: req.body.password, email: req.body.email};
-    MongoClient.connect(uri, function(err, client) {
-        if (err){
-            console.log(err);
-            return res.status(500).end(err);
-        }else{
-            console.log("DB connection success");
-            const database = client.db(dbName);
-            user.register(req, res, userInfo, database, function(){
-                // close the client connection to the database
-                client.close();
-            });
-          }
-    });
+    user.register(req, res, userInfo, database, function(){});
 });
 
 // curl -X POST -d "username=admin&password=admin" -c cookie.txt http://192.168.1.107:5000/login/
@@ -147,20 +175,7 @@ app.post('/login/',checkUsername, function (req, res, next) {
     if (!('username' in req.body)) return res.status(400).end('username is missing');
     if (!('password' in req.body)) return res.status(400).end('password is missing');
     var userInfo = {username: req.body.username, password: req.body.password};
-    MongoClient.connect(uri, function(err, client) {
-        if (err){
-            console.log(err);
-            return res.status(500).end(err);
-        }else{
-            console.log("DB connection success");
-            const database = client.db(dbName);
-            user.login(req, res, userInfo, database, function(){
-                console.log(req.session.username);
-                // close the client connection to the database
-                client.close();
-            });
-          }
-    });
+    user.login(req, res, userInfo, database, function(){});
 });
 
 // curl -b cookie.txt -c cookie.txt http://192.168.1.107:5000/logout/
@@ -168,43 +183,21 @@ app.get('/logout/', function(req, res, next){
     user.logout(req, res, cookie);
 });
 
+// third party authentications
+
+
 // GET
 
 // curl -b cookie.txt http://192.168.1.107:5000/api/sin/creators/
 app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){
-    MongoClient.connect(uri, function(err, client) {
-        if (err){
-            console.log(err);
-            return res.status(500).end(err);
-        }else{
-            console.log("DB connection success");
-            const database = client.db(dbName);
-            var data = {username: escape(req.params.username)};
-            user.getCreators(req, res, data, database, function(){
-                // close the client connection to the database
-                client.close();
-            });
-          }
-    });
-    
+    var data = {username: escape(req.params.username)};
+    user.getCreators(req, res, data, database, function(){});
 });
 
 // curl -b cookie.txt http://192.168.1.107:5000/api/admin/subscriptions/
 app.get('/api/:username/subscriptions/', isAuthenticated, function(req, res, next){
-    MongoClient.connect(uri, function(err, client) {
-        if (err){
-            console.log(err);
-            return res.status(500).end(err);
-        }else{
-            console.log("DB connection success");
-            const database = client.db(dbName);
-            var data = {username: escape(req.params.username)};
-            user.getSubscriber(req, res, data, database, function(){
-                // close the client connection to the database
-                client.close();
-            });
-          }
-    });
+    var data = {username: escape(req.params.username)};
+    user.getSubscriber(req, res, data, database, function(){});
     
 });
 
@@ -216,72 +209,40 @@ app.post('/api/:username/uploads/', isAuthenticated, upload.single("file"), func
     var username = req.session.username;
     var title = escapeInput(req.body.title);
     var description = escapeInput(req.body.description);
-    MongoClient.connect(uri, function(err, client) {
-        if (err) return res.status(500).end(err);        
-        console.log("DB connection success");
-        const database = client.db(dbName);
-        user.getUser(username, database, function(err, userObj){
-            if (err) {
-                client.close();
-                return res.status(500).end(err);
-            }
-            // check if the user exists and is the user a creator
-            if (!userObj) {
-                client.close(); 
-                return res.status(404).end("user "+ username + " not found");
-            }
-            if (!userObj.isCreator){
-                client.close(); 
-                return res.status(403).end("user "+ username + " is not a creator");
-            }
-            stream = cloudinary.v2.uploader.upload_stream({resource_type: 'raw'}, function(err, result) {
-                if (err) return res.status(500).end(err);
-                videoContent = {poster: username, title: title, description: description};
-                video.addVideo(res, req, result, videoContent, database, function(){
-                     // close the client connection to the database
-                    client.close();
-                });
-            });
-            // upload the video
-            stream.end(req.file.buffer);
+    user.getUser(username, database, function(err, userObj){
+        if (err) return res.status(500).end(err);
+        // check if the user exists and is the user a creator
+        if (!userObj) return res.status(404).end("user "+ username + " not found");
+        if (!userObj.isCreator) return res.status(403).end("user "+ username + " is not a creator");
+        stream = cloudinary.v2.uploader.upload_stream({resource_type: 'raw'}, function(err, result) {
+            if (err) return res.status(500).end(err);
+            videoContent = {poster: username, title: title, description: description};
+            video.addVideo(res, req, result, videoContent, database, function(){});
         });
-
+        // upload the video
+        stream.end(req.file.buffer);
     });
 });
 
 // GET
 app.get('/api/:videoId/', isAuthenticated, function(req, res, next){
-    MongoClient.connect(uri, function(err, client){
-        if (err) return res.status(500).end(err);        
-        console.log("DB connection success");
-        const database = client.db(dbName);
-        video.getVideo(res, req, escapeInput(req.params.videoId), database, function(){
-            // close the client connection to the database
-            client.close();
-        });
-    });
+    video.getVideo(res, req, escapeInput(req.params.videoId), database, function(){});
 });
 
 
 // get all the videos object given an creator's username
 app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
     var creator = escapeInput(req.params.creator);
-    MongoClient.connect(uri, function(err, client){
-        if (err) return res.status(500).end(err);        
-        console.log("DB connection success");
-        const database = client.db(dbName);
-        if(creator === req.session.username || user.isSubscribed({creator: creator, subscriber:req.session.username})){
-            video.getAllVideosFromCreator(res, req, creator, database, function(){
-                // close the client connection to the database
-                client.close();
-            });
-        }else{
-            return res.status(403).end("not a subscriber of creator: " + creator);
-        }
-    });
+    const database = client.db(dbName);
+    if(creator === req.session.username || user.isSubscribed({creator: creator, subscriber:req.session.username})){
+        video.getAllVideosFromCreator(res, req, creator, database, function(){});
+    }else{
+        return res.status(403).end("not a subscriber of creator: " + creator);
+    }
 });
 
-// UPDATE
+
+//
 
 // add a subscriber
 // curl -X POST -b cookie.txt http://192.168.1.107:5000/api/admin/addSub/asdf/
@@ -290,13 +251,7 @@ app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res
     var subscriber = escape(req.params.subscriber);
     if(creator !== escape(req.params.creator)) return res.status(403).end("username mismatched");
     var data = {creator: creator, subscriber: subscriber};
-    MongoClient.connect(uri, function(err, client){
-        if (err) return res.status(500).end(err); 
-        const database = client.db(dbName);
-        user.addSubscriber(req, res, data, database, function(){
-            client.close();
-        });
-    });
+    user.addSubscriber(req, res, data, database, function(){});
 }); 
 
 // DELETE

@@ -17,8 +17,6 @@
     margin: 40px 10px 10px 40px;
     background-color: #252525;
     border: 1px solid #252525;
-    /*width: 200px;
-    height: 115px;*/
     width: 256px;
     height: 144px;
     text-align: center;
@@ -82,4 +80,25 @@
     margin-bottom: 0;
     width: 256px;
     height: 144px;
+}
+
+#video_container {
+    width: 1280px;
+    display: block;
+    margin: 0 auto;
+}
+
+#about_video {
+    padding: 1px 1px 1px 1px;
+}
+
+#current_title {
+    font-size: 30px;
+}
+
+#current_upDate {
+    color: #676767;
+}
+#current_upDate, #current_desc {
+    font-size: 20px;
 }

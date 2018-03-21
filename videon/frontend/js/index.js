@@ -3,15 +3,18 @@
 (function(){
     "use strict";
 
-    function insertUser (curr_user) {
+    function insertUser (user) {
         var new_creator = document.createElement('div');
-        new_creator.class = "user";
+        new_creator.className = "user";
         new_creator.innerHTML = `
-            <div class="user">
-                <img src="media/default.jpg" class="profile_picture" alt="profile_picture">
-                <div class="sidenav_text">${curr_user}</div>
-            </div>
+            <img src="media/default.jpg" class="profile_picture" alt="profile_picture">
+            <div class="sidenav_text">${user}</div>
         `;
+
+        new_creator.addEventListener('click', function(e) {
+            loadCreatorPage(user);
+        });
+
         document.getElementById("subscriptions").appendChild(new_creator);
     }
 
@@ -56,19 +59,22 @@
         });
 
         document.getElementById("my_page_button").addEventListener("click", function(e) {
-            var content = document.getElementById("content");
-            content.innerHTML = "";
-            /*api.getAllVideoObjects(api.getCurrentUser(), function(err, videoObjs) {
-                if (err) console.error(err);
-                else {*/
-                    content.innerHTML = `
-                        <div id="video_container"></div>
-                        <div id="videos_list"></div>    
-                    `;
-                    var videoObjs = [{title:"Hellodsaklnfkasdjfbnlkasjbflkasdjbfaskljdfbnlkjasdbflkbajbsdflkajsbdf"}, {title:"World!"}];
-                    videoObjs.forEach(insertVideoToContent);
-                //}
-            //});
+            loadCreatorPage(api.getCurrentUser());
+        });
+    }
+
+    function loadCreatorPage(creator) {
+        var content = document.getElementById("content");
+        content.innerHTML = "";
+        api.getAllVideoObjects(creator, function(err, videoObjs) {
+            if (err) console.error(err);
+            else {
+                content.innerHTML = `
+                    <div id="video_container"></div>
+                    <div id="videos_list"></div>    
+                `;
+                videoObjs.forEach(insertVideoToContent);
+            }
         });
     }
 
@@ -89,15 +95,29 @@
         container.className = "select_video_container";
         container.innerHTML = `
             <div class="select_video">
-                <div class="play_button"></div>
+                <div id="${videoObj._id}" class="play_button"></div>
                 <img src="media/temp.jpg" class="thumbnail" alt="test">
             </div>
             <div class="video_title">${videoObj.title}</div>
         `;
-
-
         list.appendChild(container);
         // add event listener for clicking on the play button
+        document.getElementById(videoObj._id).addEventListener("click", function(e){
+            var video_container = document.getElementById("video_container");
+            video_container.innerHTML = `
+            <video width=1280 height=720 class="video-js vjs-default-skin video" controls>
+                <source
+                    src="${videoObj.url}"
+                    type="video/mp4">
+            </video>
+            <div id="about_video"> 
+                <div id="current_title">${videoObj.title}</div>
+                <div id="current_upDate">${convertDate(videoObj.uploadDate)}</div>
+                <br>
+                <div id="current_desc">${videoObj.description}</div>
+            </div>
+            `;
+        });
     }
 
     function insertCreatorToContent (username, userCreatorList) {
@@ -113,6 +133,7 @@
         document.getElementById("content").appendChild(creator);
         if (userCreatorList.indexOf(username) != -1) {
             var button = document.getElementById(username);
+            console.log(button);
             button.innerHTML = "Subscribed! ✓";
             button.disabled = true;
             button.style.color = "#00FF0E";
@@ -120,7 +141,7 @@
         }
         // -------------------------------TODO------------------------------- 
         // need to add event listeners for visit page and subscribe buttons
-        document.getElementById(username).addEventListener("click", function(e){
+        /*document.getElementById(username).addEventListener("click", function(e){
             var current_user = api.getCurrentUser();
             api.addSubscriber(username, current_user, function(err) {
                 if (err) console.error(err);
@@ -132,7 +153,7 @@
                     refreshSubscriptions(current_user);
                 }
             });
-        });
+        });*/
     }
 
     function loadCreators() {
@@ -153,6 +174,16 @@
                 });
             }
         });
+    }
+
+    function convertDate(initialDate) {
+        var currentDate = new Date();
+        var fromDate = new Date(initialDate);
+        if (fromDate.getDate() === currentDate.getDate() && 
+            fromDate.getMonth() === currentDate.getMonth() && 
+            fromDate.getFullYear() === currentDate.getFullYear()) return "Today";
+        currentDate = fromDate.toDateString();
+        return currentDate.slice(currentDate.indexOf(' '), currentDate.length);
     }
 
     window.addEventListener('load', function(){

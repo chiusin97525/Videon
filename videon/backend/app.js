@@ -304,10 +304,8 @@ app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
 // add a subscriber
 // curl -X POST -b cookie.txt http://192.168.1.107:5000/api/admin/addSub/asdf/
 app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res, next){
-    //var creator = req.session.username;
-    //var subscriber = escape(req.params.subscriber);
-    var creator = req.params.creator;
-    var subscriber = req.session.username;
+    var creator = req.session.username;
+    var subscriber = escape(req.params.subscriber);
     if(creator !== escape(req.params.creator)) return res.status(403).end("username mismatched");
     var data = {creator: creator, subscriber: subscriber};
     MongoClient.connect(uri, function(err, client){

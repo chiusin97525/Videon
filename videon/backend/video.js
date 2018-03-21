@@ -37,8 +37,6 @@ module.exports = (function(){
         collection.find({poster: username}).toArray(function(err, videoObjs){
             if(err) return response(res, 500, err, callback);
             callback();
-            console.log("VIDEO OBJECTS UNDERNEATH");
-            console.log(videoObjs);
             return res.json(videoObjs);
         });
     }

@@ -86,6 +86,10 @@ passport.deserializeUser(function(username, done) {
 const storage = multer.memoryStorage();
 const upload = multer({storage});
 
+// app.use(function(req, res, next){
+//     if(req.user) next();
+//     else res.redirect('/login.html');
+// });
 
 app.use(function(req, res, next){
     if(!req.user) req.user = {username:""};
@@ -93,7 +97,6 @@ app.use(function(req, res, next){
     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
           path : '/', 
           maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-          httpOnly: true, 
           sameSite: true,
           secure: process.env.USE_SECURE_FLAG
     }));
@@ -206,7 +209,6 @@ app.post('/login/',checkUsername, function (req, res, next) {
             res.setHeader('Set-Cookie', cookie.serialize('username', userObj.username, {
               path : '/', 
               maxAge: 60 * 60 * 24 * 7,
-              httpOnly: true, 
               sameSite: true,
               secure: process.env.USE_SECURE_FLAG
             }));
@@ -221,7 +223,6 @@ app.get('/logout/', function(req, res, next){
     res.setHeader('Set-Cookie', cookie.serialize('username', '', {
           path : '/', 
           maxAge: 60 * 60 * 24 * 7,
-          httpOnly: true, 
           sameSite: true,
           secure: process.env.USE_SECURE_FLAG
     }));

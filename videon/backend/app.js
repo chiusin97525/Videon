@@ -22,44 +22,6 @@ const video = require('./video');
 const ERRMSG_BAD_USERNAME = "Bad username input";
 const ERRMSG_BAD_EMAIL = "Not a valid email address";
 
-// server settings
-const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
-// multer setting, storing buffer in memory
-const storage = multer.memoryStorage();
-const upload = multer({storage});
-
-app.use(session({
-    secret: 'blackbird flies',
-    resave: false,
-    saveUninitialized: true,
-    cookie: {httpOnly: true, sameSite: true}
-}));
-
-// app.use(function(req, res, next){
-//     var username = (req.user.username)? req.user.username : '';
-//     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
-//           path : '/', 
-//           maxAge: 60 * 60 * 24 * 7 // 1 week in number of seconds
-//     }));
-//     next();
-// });
-
-// force https when it is in production environment
-var force_https = function(){
-    if(process.env.NODE_ENV === "production"){
-        app.use(forceSsl);
-        session.cookie.secure = true;
-    }
-}
-force_https();
-
-// frontend files
-app.use(express.static('frontend'));
-
 // database server connection setting
 var uri;
 var dbName;
@@ -76,12 +38,80 @@ var select_database = function(){
 }
 select_database();
 
+// session store
+var MongoDBStore = require('connect-mongodb-session')(session);
+var store = new MongoDBStore({
+        uri: uri,
+        databaseName: 'connect_mongodb_session',
+        collection: 'sessions'
+    });
+
+// database
 var database;
 MongoClient.connect(uri, function(err, client) {
     if (err) return console.log(err);
     console.log("Ddatabase connection success");
     database = client.db(dbName);
 });
+
+
+// server settings
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.use(session({
+    secret: 'blackbird flies',
+    store: store,
+    resave: false,
+    saveUninitialized: true,
+    cookie: {httpOnly: true, sameSite: true}
+}));
+
+// passport settings
+const passport = require('passport');
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(function(username, done) {
+    done(null, JSON.stringify(username));
+});
+
+passport.deserializeUser(function(username, done) {
+    done(null, JSON.parse(username));
+});
+
+// multer setting, storing buffer in memory
+const storage = multer.memoryStorage();
+const upload = multer({storage});
+
+
+app.use(function(req, res, next){
+    if(!req.user) req.user = {username:""};
+    var username = req.user.username;
+    res.setHeader('Set-Cookie', cookie.serialize('username', username, {
+          path : '/', 
+          maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+          httpOnly: true, 
+          sameSite: true,
+          secure: process.env.USE_SECURE_FLAG
+    }));
+    next();
+});
+
+// force https when it is in production environment
+var force_https = function(){
+    if(process.env.NODE_ENV === "production"){
+        app.use(forceSsl);
+        session.cookie.secure = true;
+    }
+}
+force_https();
+
+// frontend files
+app.use(express.static('frontend'));
+
 
 // storage server connection setting
 var select_storage_server = function(){
@@ -103,19 +133,8 @@ select_storage_server();
 
 
 // third party authentication settings
-const passport = require('passport');
 //const TwitterStrategy = require('passport-twitter').Strategy;
 const LocalStrategy = require('passport-local').Strategy;
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.serializeUser(function(username, done) {
-    done(null, JSON.stringify(username));
-});
-
-passport.deserializeUser(function(username, done) {
-  done(null, JSON.parse(username));
-});
 
 // passport.use(new TwitterStrategy({
 //         consumerKey: process.env.TWITTER_CONSUMER_KEY,
@@ -167,7 +186,11 @@ app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
     if (!('password' in req.body)) return res.status(400).end('password is missing');
     if (!('email' in req.body)) return res.status(400).end('email is missing');
     var userInfo = {username: req.body.username, password: req.body.password, email: req.body.email};
-    user.register(req, res, userInfo, database, function(){});
+    user.register(userInfo, database, function(err, userObj, info){
+        if (err) return res.status(500).end(err);
+        if (!userObj) return res.status(info.status).end(info.msg);
+        return res.json("user " + userObj.username + " signed up");
+    });
 });
 
 // curl -X POST -d "username=admin&password=admin" -c cookie.txt http://192.168.1.107:5000/login/
@@ -182,7 +205,10 @@ app.post('/login/',checkUsername, function (req, res, next) {
             if(err) return res.status(500).end(err);
             res.setHeader('Set-Cookie', cookie.serialize('username', userObj.username, {
               path : '/', 
-              maxAge: 60 * 60 * 24 * 7
+              maxAge: 60 * 60 * 24 * 7,
+              httpOnly: true, 
+              sameSite: true,
+              secure: process.env.USE_SECURE_FLAG
             }));
             return res.json("user " + userObj.username + " signed in");
         });
@@ -191,7 +217,15 @@ app.post('/login/',checkUsername, function (req, res, next) {
 
 // curl -b cookie.txt -c cookie.txt http://192.168.1.107:5000/logout/
 app.get('/logout/', function(req, res, next){
-    user.logout(req, res, cookie);
+    req.session.destroy();
+    res.setHeader('Set-Cookie', cookie.serialize('username', '', {
+          path : '/', 
+          maxAge: 60 * 60 * 24 * 7,
+          httpOnly: true, 
+          sameSite: true,
+          secure: process.env.USE_SECURE_FLAG
+    }));
+    return res.redirect("/");
 });
 
 // third party authentications
@@ -202,13 +236,21 @@ app.get('/logout/', function(req, res, next){
 // curl -b cookie.txt http://192.168.1.107:5000/api/sin/creators/
 app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){
     var data = {username: escape(req.params.username)};
-    user.getCreators(req, res, data, database, function(){});
+    user.getCreators(data, database, function(err, creatorLst, info){
+        if (err) return res.status(500).end(err);
+        //if (!creators) return res.status(info.status).end(info.msg);
+        return res.json(creatorLst);
+    });
 });
 
 // curl -b cookie.txt http://192.168.1.107:5000/api/admin/subscriptions/
 app.get('/api/:username/subscriptions/', isAuthenticated, function(req, res, next){
     var data = {username: escape(req.params.username)};
-    user.getSubscribers(req, res, data, database, function(){});
+    user.getSubscribers(data, database, function(err, subLst, info){
+        if(err) return res.status(500).end(err);
+        //if(!subLst) return res.status(info.status).end(info.msg);
+        return res.json(subLst);
+    });
     
 });
 
@@ -263,7 +305,11 @@ app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res
     var subscriber = escape(req.params.subscriber);
     if(creator !== escape(req.params.creator)) return res.status(403).end("username mismatched");
     var data = {creator: creator, subscriber: subscriber};
-    user.addSubscriber(req, res, data, database, function(){});
+    user.addSubscriber(data, database, function(err, userObj, info){
+        if(err) return res.status(500).end(err);
+        if(!userObj) return res.status(info.status).end(info.msg);
+        return res.json("user " + userObj.username + " added as subscriber");
+    });
 }); 
 
 // DELETE

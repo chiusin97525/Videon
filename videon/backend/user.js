@@ -2,7 +2,6 @@
 module.exports = (function(){
     "use strict";
     const crypto = require('crypto');
-    const session = require('express-session');
     const collectionUsers = "users";
     const collectionSubs = "subscriptions";
     var user = {};
@@ -17,52 +16,29 @@ module.exports = (function(){
         return hash.digest('base64');
     }
 
-    function response(res, statusCode, ending, callback){
-        callback();
-        return res.status(statusCode).end(ending);
-    }
-
 //------------------------------------------------------------------------------------
 
-    user.register = function(req, res, userInfo, database, callback){
-        var username = userInfo.username;
-        var password = userInfo.password;
-        var email = userInfo.email;
+    user.register = function(data, database, callback){
+        var username = data.username;
+        var password = data.password;
+        var email = data.email;
         // get the collection
         var collection = database.collection(collectionUsers);
         collection.findOne({_id: username}, function(err, userObj){
             // error checking
-            if (err) return response(res, 500, err, callback);
-            if (userObj) return response(res, 409, "username " + username + " already exists\n", callback);
-            
+            if (err) return callback(err, null, null);
+            if (userObj) return callback(null, null, {status:409, msg: "username " + username + " already exists\n"});
             // generate a hash, and salt the hash with the password
             var salt = crypto.randomBytes(16).toString('base64');
             var saltedHash = generateHash(password, salt);
             // add the user to database
-            collection.update({_id: username},{_id: username, saltedHash: saltedHash, salt: salt, email: email, isCreator: false}, {upsert: true}, function(err){
-                if (err) return response(res, 500, err, callback);
-                callback();
-                return res.json("user " + username + " signed up");
+            collection.update({_id: username},{_id: username, saltedHash: saltedHash, salt: salt, email: email, isCreator: false}, {upsert: true}, function(err, result){
+                if (err) return callback(err, null, null);
+                result.username = username;
+                return callback(null, result, null);
             });
         });
     }
-
-    // user.login = function(req, res, userInfo, database, callback){
-    //     var username = userInfo.username;
-    //     var password = userInfo.password;
-    //     // get the collection
-    //     var collection = database.collection(collectionUsers);
-    //     collection.findOne({_id: username}, function(err, userObj){
-    //         if(err) return response(res, 500, err, callback);
-    //         if(!userObj) return response(res, 401, "user " + username + " not found", callback);
-    //         if (userObj.saltedHash !== generateHash(password, userObj.salt)) return response(res, 401, ERRMSG_ACCESS_DENIED, callback);
-    //         // start a session
-    //         req.session.username = userObj._id;
-    //         callback();
-    //         //return res.redirect("/");
-    //         return res.json("user " + username + " signed in");
-    //     });
-    // }
 
     user.login = function(data, database, callback){
         var username = data.username;
@@ -79,74 +55,61 @@ module.exports = (function(){
         });
     }
 
-    user.logout = function(req, res, cookie){
-        req.session.destroy();
-        res.setHeader('Set-Cookie', cookie.serialize('username', '', {
-              path : '/', 
-              maxAge: 60 * 60 * 24 * 7 
-        }));
-        return res.redirect("/");
-    }
-
     // returns an user object on success
     user.getUser = function(username, database, callback){
         var collection = database.collection(collectionUsers);
         collection.findOne({_id: username}, callback);
     }
 
-    user.getCreators = function(req, res, data, database, callback){
+    user.getCreators = function(data, database, callback){
         var collection = database.collection(collectionSubs);
         collection.find({subscriber: data.username}, {fields:{creator:1, _id: 0}}).toArray(function(err, creators){
-            if(err) return response(res, 500, err, callback);
+            if(err) return callback(err, null, null);
             var creatorsLst = [];
-            console.log(creators);
             creators.forEach(function(entry){
                 creatorsLst.push(entry.creator);
             });
-            callback();
-            return res.json(creatorsLst);
+            return callback(null, creatorsLst, null);
         });
     }
 
-    user.getSubscribers = function(req, res, data, database, callback){
+    user.getSubscribers = function(data, database, callback){
         var collection = database.collection(collectionSubs);
         collection.find({creator: data.username}, {fields:{subscriber:1, _id: 0}}).toArray(function(err, subscribers){
-            if(err) return response(res, 500, err, callback);
+            if(err) return callback(err, null, null);
             var subscribersLst = [];
-            console.log(subscribers);
             subscribers.forEach(function(entry){
                 subscribersLst.push(entry.subscriber);
             });
-            callback();
-            return res.json(subscribersLst);
+            return callback(null, subscribersLst, null);
         });
     }
 
     // manually add a user as subscriber without having the user to pay
-    user.addSubscriber = function(req, res, data, database, callback){
+    user.addSubscriber = function(data, database, callback){
         var subCollection = database.collection(collectionSubs);
         var userCollection = database.collection(collectionUsers);
         var subscriber = data.subscriber;
         var creator = data.creator;
         // check if there is such subscription already
         subCollection.findOne({_id: subscriber+"-"+creator}, function(err, subObj){
-            if(err) return response(res, 500, err, callback);
+            if(err) return callback(err, null, null);
             // if the user is already subscribed
-            if(subObj) return response(res, 400, "user " + subscriber + " already subscribed", callback);
+            if(subObj) return callback(null, null, {status:400, msg: "user " + subscriber + " already subscribed"})
             // check if creator exists
             userCollection.findOne({_id: creator}, function(err, creatorObj){
-                if(err) return response(res, 500, err, callback);
+                if(err) return callback(err, null, null);
                 // if no such user
-                if(!creatorObj) return response(res, 404, "user " + creator + " not found", callback);
+                if(!creatorObj) return callback(null, null, {status: 400, msg:"user " + creator + " not found"});
                 // if the user is not a creator
-                if(!creatorObj.isCreator) return response(res, 403, "Not a creator", callback);
+                if(!creatorObj.isCreator) return callback(null, null, {status:403, msg:"Not a creator"});
                 userCollection.findOne({_id: subscriber}, function(err, userObj){
-                    if(err) return response(res, 500, err, callback);
-                    if(!userObj) return response(res, 404, "user " + subscriber + " not found", callback);
+                    if(err) return callback(err, null, null);
+                    if(!userObj) return callback(null, null, {status:404, msg:"user " + subscriber + " not found"});
                     var id = subscriber + "-" + creator;
                     subCollection.insert({_id: id, subscriber: subscriber, creator: creator}, function(err){
-                        if(err) return response(res, 500, err, callback);
-                        return res.json("user " + subscriber + " added as subscriber");
+                        if(err) callback(err, null, null);
+                        return callback(null, {username: subscriber}, null);
                     });
                 });
             });

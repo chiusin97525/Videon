@@ -129,13 +129,13 @@ module.exports = (function(){
         });
     }
 
-    user.isSubscribed = function(data, database){
+    user.isSubscribed = function(data, database, callback){
         var subscriber = data.subscriber;
         var creator = data.creator;
         var subCollection = database.collection(collectionSubs);
-        subCollection.findOne({_id: subscriber+"-"+creator}, function(err, result){
-            if(!result) return false;
-            return true;
+        subCollection.findOne({subscriber: subscriber, creator:creator}, function(err, result){
+            if(!result) return callback(false);
+            return callback(true);
         });
     }
 

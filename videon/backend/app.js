@@ -66,6 +66,7 @@ app.use(session({
     store: store,
     resave: false,
     saveUninitialized: true,
+    maxAge: 60 * 60 * 24 * 7,
     cookie: {httpOnly: true, sameSite: true}
 }));
 
@@ -86,6 +87,10 @@ passport.deserializeUser(function(username, done) {
 const storage = multer.memoryStorage();
 const upload = multer({storage});
 
+// app.use(function(req, res, next){
+//     if(req.user) next();
+//     else res.redirect('/login.html');
+// });
 
 app.use(function(req, res, next){
     if(!req.user) req.user = {username:""};
@@ -93,7 +98,6 @@ app.use(function(req, res, next){
     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
           path : '/', 
           maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-          httpOnly: true, 
           sameSite: true,
           secure: process.env.USE_SECURE_FLAG
     }));
@@ -207,7 +211,6 @@ app.post('/login/',checkUsername, function (req, res, next) {
             res.setHeader('Set-Cookie', cookie.serialize('username', userObj.username, {
               path : '/', 
               maxAge: 60 * 60 * 24 * 7,
-              httpOnly: true, 
               sameSite: true,
               secure: process.env.USE_SECURE_FLAG
             }));
@@ -219,10 +222,10 @@ app.post('/login/',checkUsername, function (req, res, next) {
 // curl -b cookie.txt -c cookie.txt http://192.168.1.107:5000/logout/
 app.get('/logout/', function(req, res, next){
     req.session.destroy();
+    req.logout();
     res.setHeader('Set-Cookie', cookie.serialize('username', '', {
           path : '/', 
           maxAge: 60 * 60 * 24 * 7,
-          httpOnly: true, 
           sameSite: true,
           secure: process.env.USE_SECURE_FLAG
     }));
@@ -307,10 +310,13 @@ app.get('/api/:videoId/', isAuthenticated, function(req, res, next){
 // curl -b cookie.txt http://192.168.1.107:5000/api/admin/videos/
 app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
     var creator = escapeInput(req.params.creator);
-    if(creator === req.user.username || user.isSubscribed({creator: creator, subscriber:req.user.username})){
+    if(creator === req.user.username){
         video.getAllVideosFromCreator(res, req, creator, database, function(){});
     }else{
-        return res.status(403).end("not a subscriber of creator: " + creator);
+        user.isSubscribed({creator: creator, subscriber:req.user.username}, database, function(subscribed){
+            if (subscribed) return video.getAllVideosFromCreator(res, req, creator, database, function(){});
+            return res.status(403).end("not a subscriber of creator: " + creator);
+        });
     }
 });
 

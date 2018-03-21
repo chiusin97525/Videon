@@ -2,17 +2,18 @@
 
 (function(){
     "use strict";
+    var user = null;
 
-    function insertUser (user) {
+    function insertUser (username) {
         var new_creator = document.createElement('div');
         new_creator.className = "user";
         new_creator.innerHTML = `
             <img src="media/default.jpg" class="profile_picture" alt="profile_picture">
-            <div class="sidenav_text">${user}</div>
+            <div class="sidenav_text">${username}</div>
         `;
 
         new_creator.addEventListener('click', function(e) {
-            loadCreatorPage(user);
+            loadCreatorPage(username);
         });
 
         document.getElementById("subscriptions").appendChild(new_creator);
@@ -50,8 +51,7 @@
                 var title = document.getElementById("video_title").value;
                 var file = document.getElementById("video_file").files[0];
                 var description = document.getElementById("video_description").value;
-                var username = api.getCurrentUser();
-                api.uploadVideo(username, title, description, file, function(err) {
+                api.uploadVideo(user, title, description, file, function(err) {
                     if (err) console.error(err);
                     else console.log("upload success");
                 });
@@ -78,8 +78,8 @@
         });
     }
 
-    function refreshSubscriptions(user) {
-        api.getCreators(user, function(err, creatorsList){
+    function refreshSubscriptions(username) {
+        api.getCreators(username, function(err, creatorsList){
             if (err) console.error(err);
             else {
                 var subscriptions = document.getElementById("subscriptions");
@@ -120,20 +120,19 @@
         });
     }
 
-    function insertCreatorToContent (username, userCreatorList) {
+    function insertCreatorToContent (creatorName, userCreatorList) {
         var creator = document.createElement('div');
         creator.class = "creator";
         creator.innerHTML = `
             <div class="creator">
-                <div class="creator_name">${username}</div>
+                <div class="creator_name">${creatorName}</div>
                 <button class="visit_page btn btnEffect">Visit Page</button>
-                <button id="${username}" class="subscribe btn btnEffect">Subscribe</button>
+                <button id=${creatorName} class="subscribe btn btnEffect">Subscribe</button>
             </div>
         `;
         document.getElementById("content").appendChild(creator);
-        if (userCreatorList.indexOf(username) != -1) {
-            var button = document.getElementById(username);
-            console.log(button);
+        if (userCreatorList.indexOf(creatorName) != -1) {
+            var button = document.getElementById(creatorName);
             button.innerHTML = "Subscribed! ✓";
             button.disabled = true;
             button.style.color = "#00FF0E";
@@ -160,13 +159,18 @@
         api.getAllCreators(function(err, allCreators) {
             if (err) console.error(err);
             else {
-                api.getCreators(api.getCurrentUser(), function(err, creatorList) {
+                api.getCreators(user, function(err, creatorList) {
                     if (err) console.error(err);
                     else {
-                        var user = api.getCurrentUser();
                         var contentPage = document.getElementById("content");
                         contentPage.innerHTML = "";
-                        //allCreators.forEach(insertCreatorToContent);
+                        var header = document.createElement("header");
+                        header.innerHTML = "Creators";
+                        contentPage.appendChild(header);
+                        // shuffle list of creators and return the first 10
+                        allCreators = allCreators.filter(function(creator) {return creator !== user;});
+                        shuffle(allCreators);
+                        allCreators = allCreators.slice(0,10);
                         for (var i in allCreators) {
                             insertCreatorToContent(allCreators[i], creatorList);
                         }
@@ -174,6 +178,19 @@
                 });
             }
         });
+    }
+
+    function isUser (username) {
+        return username === user;
+    }
+
+    /*Function from --> https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array */
+    function shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
     }
 
     function convertDate(initialDate) {
@@ -187,19 +204,24 @@
     }
 
     window.addEventListener('load', function(){
-        var user = api.getCurrentUser();
-        if (user == "" || !user) {
-            location.href = "/login.html";
-        } else {
-            refreshUser(user);
-            refreshSubscriptions(user);
-            loadCreators();
-        }
+        api.getCurrentUser(function(err, currUser) {
+            if (!currUser) {
+                location.href = "/login.html";
+            } else {
+                user = currUser;
+                refreshUser(user);
+                refreshSubscriptions(user);
+                loadCreators();
+            }
+        });
 
         document.getElementById("logout_button").addEventListener("click", function(e) {
             api.logout(function(err){
                 if (err) console.error(err);
-                else location.href = "/login.html";
+                else {
+                    user = null;
+                    location.href = "/login.html";
+                }
             });
         });
     });

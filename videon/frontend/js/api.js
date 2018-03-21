@@ -44,10 +44,8 @@ var api = (function(){
         isCreator: Boolean
     */
 
-    module.getCurrentUser = function(){
-        var l = document.cookie.split("username=");
-        if (l.length > 1) return l[1];
-        return null;
+    module.getCurrentUser = function(callback){
+        send("GET", '/currentUser/', null, callback);
     }
 
 

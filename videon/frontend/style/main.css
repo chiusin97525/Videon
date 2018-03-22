@@ -89,3 +89,7 @@ form {
 #login_username, #login_password {
 	width: 158px;
 }
+
+.hidden {
+	display: none;
+}

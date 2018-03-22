@@ -5,9 +5,9 @@
 
     window.addEventListener('load', function(){
 
-        if (api.getCurrentUser()) {
-            location.href = "/";
-        }
+        api.getCurrentUser(function(user) {
+            if (user) location.href = "/";
+        });
 
         function submit(){
             console.log(document.querySelector("form").checkValidity());

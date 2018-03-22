@@ -20,19 +20,19 @@
     }
 
     function refreshUser(username) {
-        var current_user = document.getElementById("logged_in_container");
-        current_user.innerHTML = "";
+        var container = document.getElementById("logged_in_container");
+        var current_user = document.createElement('div');
+        current_user.className = "user";
+        current_user.id = "current_user";
         current_user.innerHTML = `
-            <div class="user">
-                <img src="media/default.jpg" class="profile_picture" alt="profile_picture">
-                <div class="sidenav_text">${username}</div>
-            </div>
-            <button id="upload_button" class="btn btnEffect">Upload</button>
-            <button id="my_page_button" class="btn btnEffect">My Page</button>
+            <img src="media/default.jpg" class="profile_picture" alt="profile_picture">
+            <div class="sidenav_text">${username}</div>
+        `;
+        container.appendChild(current_user);
+        container.innerHTML += `
+            <button id="upload_button" class="hidden btn btnEffect">Upload</button>
         `;
         document.getElementById("upload_button").addEventListener("click", function(e) {
-            // ---------TODO--------------
-            // need an api function to get user object and check if they're creator in order to go to uploading page
             var content = document.getElementById("content");
             content.innerHTML = `
                 <div id="upload_container" class="form_container">
@@ -42,6 +42,7 @@
                         <input type="file" id="video_file" class="form_element" name="file"/>
                         <textarea id="video_description" class="form_element" rows=3 placeholder="Video Description"></textarea>
                         <input type="submit" id="submit_video" class="btn btnEffect" value="Upload"/>
+                        <div id="verify_upload"></div>
                     </form>    
                 </div>
             `;
@@ -53,13 +54,33 @@
                 var description = document.getElementById("video_description").value;
                 api.uploadVideo(user, title, description, file, function(err) {
                     if (err) console.error(err);
-                    else console.log("upload success");
+                    else document.getElementById("verify_upload").innerHTML = "Video may take a few seconds to appear on creator page.";
                 });
             });
         });
 
-        document.getElementById("my_page_button").addEventListener("click", function(e) {
-            loadCreatorPage(api.getCurrentUser());
+        // goes to current user's page
+        document.getElementById("current_user").addEventListener("click", function(e) {
+            api.getAllCreators(function(err, creators) {
+                if (err) console.error(err);
+                else {
+                    if (creators.indexOf(user) != -1)  loadCreatorPage(user);
+                    else makeCreatorPage();
+                }
+            })
+        });
+    }
+
+    function makeCreatorPage () {
+        var content = document.getElementById("content");
+        content.innerHTML = `
+            <button id="makeCreator" class="btn btnEffect">Make Creator</button>
+        `;
+        document.getElementById("makeCreator").addEventListener("click", function(e) {
+            /*api.makeCreator(user, function(err) {
+                if (err) console.error(err);
+                else location.href = "/";
+            });*/
         });
     }
 
@@ -70,10 +91,39 @@
             if (err) console.error(err);
             else {
                 content.innerHTML = `
+                    <header id="creator_title">${creator}</header>
+                `;
+                if (creator === user) {
+                    content.innerHTML += `
+                        <div id="add_sub_container">
+                            <form id="add_sub_form">
+                                <div id="add_sub_title">Add Subscriber</div>
+                                <input type="text" id="sub_name" name="subscribers_name" placeholder="Subscriber's Name">
+                                <div id="verify"></div>
+                                <button id="submit_sub" class="btn btnEffect">Add Subscriber</button>
+                            </form>
+                        </div>
+                    `;
+                }
+                content.innerHTML += `
                     <div id="video_container"></div>
+                    <header>Videos</header>
                     <div id="videos_list"></div>    
                 `;
                 videoObjs.forEach(insertVideoToContent);
+                if (creator === user) {
+                    document.getElementById("submit_sub").addEventListener("click", function(e) {
+                        e.preventDefault();
+                        var subName = document.getElementById("sub_name").value;
+                        api.addSubscriber(user, subName, function(err) {
+                            if (err) document.getElementById("verify").innerHTML = err;
+                            else {
+                                document.getElementById("add_sub_form").reset();
+                                document.getElementById("verify").innerHTML = subName + " has been added!";
+                            }
+                        });
+                    });
+                }
             }
         });
     }
@@ -153,6 +203,10 @@
                 }
             });
         });*/
+
+        creator.addEventListener("click", function(e) {
+            loadCreatorPage(creatorName);
+        });
     }
 
     function loadCreators() {
@@ -178,10 +232,6 @@
                 });
             }
         });
-    }
-
-    function isUser (username) {
-        return username === user;
     }
 
     /*Function from --> https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array */
@@ -212,7 +262,18 @@
                 refreshUser(user);
                 refreshSubscriptions(user);
                 loadCreators();
+                api.getAllCreators(function(err, creators) {
+                    if (err) console.error(err);
+                    else {
+                        if (creators.indexOf(user) != -1) document.getElementById("upload_button").classList.remove("hidden");
+                        else document.getElementById("upload_button").classList.add("hidden");
+                    }
+                });
             }
+        });
+
+        document.getElementById("videon").addEventListener("click", function(e) {
+            location.href = "/";
         });
 
         document.getElementById("logout_button").addEventListener("click", function(e) {

@@ -2,10 +2,24 @@
     overflow: auto;
 }
 
+header, .select_video_container, .creator {
+    margin: 20px 20px 20px 20px;
+}
+
+header {
+    font-size: 32px;
+    padding: 10px 10px 10px 10px;
+    border-bottom: 2px solid grey;
+}
+
+#creator_title {
+    border: none;
+    font-style: oblique;
+}
+
 .select_video_container {
     width: 256px;
     height: 180px;
-    margin: 40px 10px 10px 40px;
     float: left;
     position: relative;
     overflow: hidden;
@@ -14,7 +28,6 @@
 }
 
 .creator {
-    margin: 40px 10px 10px 40px;
     background-color: #252525;
     border: 1px solid #252525;
     width: 256px;
@@ -88,6 +101,10 @@
     margin: 0 auto;
 }
 
+.video {
+    margin: 20px 0px 0px 0px;
+}
+
 #about_video {
     padding: 1px 1px 1px 1px;
 }
@@ -101,4 +118,16 @@
 }
 #current_upDate, #current_desc {
     font-size: 20px;
+}
+
+#add_sub_container {
+    margin: 20px 20px 20px 20px;
+    border: 1px solid #252525;
+    width: 200px;
+}
+
+#add_sub_title, #sub_name, #submit_sub{
+    display: block;
+    float: left;
+    margin: 5px 5px 5px 5px;
 }

@@ -229,7 +229,7 @@ app.get('/logout/', function(req, res, next){
           sameSite: true,
           secure: process.env.USE_SECURE_FLAG
     }));
-    return res.redirect("/");
+    return res.json("logged out");
 });
 
 // third party authentications

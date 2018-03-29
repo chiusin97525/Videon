@@ -8,20 +8,23 @@
 </head>
 <body>
     <div id="topnav">
-    <div id="videon">Videon</div>
+        <div id="videon">Videon</div>
     </div>
-    <div class="form_container">
-        <form class="form">
+    <div id="login_form" class="form_container">
+        <form id="login_form">
             <div id="form_title" class="form_element">Login</div>
-            <input type="text" name="username" class="form_element" placeholder="Username" required/>
-            <input type="password" name="password" class="form_element" placeholder="Password" required/>
+            <div class="alert"></div>
+            <input type="text" id="login_username" name="username" class="form_element" placeholder="Username" required/>
+            <input type="password" id="login_password" name="password" class="form_element" placeholder="Password" required/>
             <div class="redirect">Need an account?
-              <a href="/signup.html">Create Account</a>
+              <a href="/register.html">Create Account</a>
             </div> 
             <div>
                 <button id="login_button" name="action" class="btn">Login</button>
             </div>
         </form>
     </div>
+    <script src="js/api.js"></script>
+    <script src="js/login.js"></script>
 </body>
 </html>

@@ -9,23 +9,34 @@ const cookie = require('cookie');
 const session = require('express-session');
 const forceSsl = require('force-ssl-heroku');
 const MongoClient = require('mongodb').MongoClient;
+const validator = require('validator');
+const cloudinary = require('cloudinary');
+const paypal = require('paypal-rest-sdk');
+
 const app = express();
 
 // require custom modules
-const user = require('./user')
+const user = require('./user');
+const video = require('./video');
 
+// custom messages
+const ERRMSG_BAD_USERNAME = "Bad username input";
+const ERRMSG_BAD_EMAIL = "Not a valid email address";
 
-// server settings
-const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 // frontend files
 app.use(express.static('frontend'));
 
+// paypal configuration
+paypal.configure({
+  'mode': 'sandbox',
+  'client_id': 'Aa8C2cbgjdXZt2n9Xpv3P8KWuKp9rjNPDVabxL4sQ4Tl5IprO11FlgZdVAP36nlksQlyua0lI_pWfV36', // please provide your client id here 
+  'client_secret': 'EOE4bq_9SDZK3ZmAPsdVhXu_RMbSPii86Nl8rALeIiLXcyS5YzEU1oeaWLuUcuxx1jwchWJx9OpQJxzd' // provide your client secret here 
+});
 
+
+// database server connection setting
 var uri;
-var database;
+var dbName;
 var select_database = function(){
     if(process.env.NODE_ENV === "production"){
         // mlab mongodb server
@@ -39,37 +50,352 @@ var select_database = function(){
 }
 select_database();
 
+// session store
+var MongoDBStore = require('connect-mongodb-session')(session);
+var store = new MongoDBStore({
+        uri: uri,
+        databaseName: 'connect_mongodb_session',
+        collection: 'sessions'
+    });
+
+// database
+var database;
+MongoClient.connect(uri, function(err, client) {
+    if (err) return console.log(err);
+    console.log("Ddatabase connection success");
+    database = client.db(dbName);
+});
+
+
+// server settings
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.use(session({
+    secret: 'blackbird flies',
+    store: store,
+    resave: false,
+    saveUninitialized: true,
+    maxAge: 60 * 60 * 24 * 7,
+    cookie: {httpOnly: true, sameSite: false }
+}));
+
+// passport settings
+const passport = require('passport');
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(function(userObj, done) {
+    done(null, JSON.stringify(userObj));
+});
+
+passport.deserializeUser(function(userObj, done) {
+    done(null, JSON.parse(userObj));
+});
+
+// multer setting, storing buffer in memory
+const storage = multer.memoryStorage();
+const upload = multer({storage});
+
+
+app.use(function(req, res, next){
+    console.log(req.session);
+    if(!req.user) req.user = {username:""};
+    var username = req.user.username;
+    res.setHeader('Set-Cookie', cookie.serialize('username', username, {
+          path : '/', 
+          maxAge: 60 * 60 * 24 * 7,
+          sameSite: false ,
+          secure: process.env.USE_SECURE_FLAG
+    }));
+    next();
+});
+
 // force https when it is in production environment
 var force_https = function(){
     if(process.env.NODE_ENV === "production"){
         app.use(forceSsl);
+        session.cookie.secure = true;
     }
 }
 force_https();
 
 
+// storage server connection setting
+var select_storage_server = function(){
+    if(process.env.NODE_ENV === "production"){
+        cloudinary.config({ 
+          cloud_name: 'hlp3qspme', 
+          api_key: '561236676358831', 
+          api_secret: 'VQga8h18map_-dvJMeiBbnHsj8s' 
+        });
+    }else{
+        cloudinary.config({ 
+          cloud_name: 'videonstorageserver', 
+          api_key: '897296893562352', 
+          api_secret: 'YuGk3JnctgsDobyJOCSM5Ws7SVY' 
+        });
+    }
+}
+select_storage_server();
+
+
+// third party authentication settings
+//const TwitterStrategy = require('passport-twitter').Strategy;
+const LocalStrategy = require('passport-local').Strategy;
+
+// passport.use(new TwitterStrategy({
+//         consumerKey: process.env.TWITTER_CONSUMER_KEY,
+//         consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
+//         callbackURL: process.env.TWITTER_CALLBACK_URL
+//     }, function(token, tokenSecret, profile, callback){
+        
+//     }
+// ));
+
+passport.use(new LocalStrategy(
+        function(username, password, done){
+            user.login({username: username, password: password}, database, function(err, userObj, msg){
+                if(err) return done(err);
+                if(msg) return done(null, false, {message: msg});
+                return done(null, userObj);
+            });
+        }
+    ));
+
+
+//----------------------------------------------------------------------------------
+var checkUsername = function(req, res, next) {
+    if (!validator.isAlphanumeric(req.body.username)) return res.status(400).end(ERRMSG_BAD_USERNAME);
+    req.body.username = validator.escape(req.body.username);
+    next();
+};
+
+var checkEmail = function(req, res, next){
+     if (!validator.isEmail(req.body.email)) return res.status(400).end(ERRMSG_BAD_EMAIL);
+     next();
+}
+
+var isAuthenticated = function(req, res, next) {
+    if (!req.isAuthenticated()) return res.status(401).end("access denied");
+    next();
+};
+
+var escapeInput = function(input){
+    return validator.escape(input);
+};
+//----------------------------------------------------------------------------------
+
 // SIGN IN/OUT/UP
-app.post('/signup/', function (req, res, next) {
+
+// curl -X POST -d "username=admin&password=admin&email=abc@gmail.com" http://192.168.1.107:5000/register/
+app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
     if (!('username' in req.body)) return res.status(400).end('username is missing');
     if (!('password' in req.body)) return res.status(400).end('password is missing');
-    var username = req.body.username;
-    var password = req.body.password;
-    MongoClient.connect(uri, function(err, client) {
-        if (err){
-            console.log(err);
-            return res.status(500).end(err);
-        }else{
-            console.log("DB connection success");
-            const database = client.db(dbName);
-            user.signUp(res, username, password, database, function(){
-                // close the client connection to the database
-                client.close();
-            });
-          }
+    if (!('email' in req.body)) return res.status(400).end('email is missing');
+    var userInfo = {username: req.body.username, password: req.body.password, email: req.body.email};
+    user.register(userInfo, database, function(err, userObj, info){
+        if (err) return res.status(500).end(err);
+        if (!userObj) return res.status(info.status).end(info.msg);
+        return res.json("user " + userObj.username + " signed up");
     });
 });
 
-// CREATE
-// READ
-// UPDATE
-// DELETE
+// curl -X POST -d "username=admin&password=admin" -c cookie.txt http://192.168.1.107:5000/login/
+app.post('/login/',checkUsername, function (req, res, next) {
+    if (!('username' in req.body)) return res.status(400).end('username is missing');
+    if (!('password' in req.body)) return res.status(400).end('password is missing');
+    // authenticate the user
+    passport.authenticate('local', function(err, userObj, info){
+        if(err) return res.status(500).end(err);
+        if(!userObj) return res.status(403).end(info.message);
+        req.logIn(userObj, function(err){
+            if(err) return res.status(500).end(err);
+            res.setHeader('Set-Cookie', cookie.serialize('username', userObj.username, {
+              path : '/', 
+              maxAge: 60 * 60 * 24 * 7,
+              sameSite: true,
+              secure: process.env.USE_SECURE_FLAG
+            }));
+            return res.json("user " + userObj.username + " signed in");
+        });
+    })(req, res, next);
+});
+
+// curl -b cookie.txt -c cookie.txt http://192.168.1.107:5000/logout/
+app.get('/logout/', function(req, res, next){
+    req.session.destroy();
+    req.logout();
+    res.setHeader('Set-Cookie', cookie.serialize('username', '', {
+          path : '/', 
+          maxAge: 60 * 60 * 24 * 7,
+          sameSite: true,
+          secure: process.env.USE_SECURE_FLAG
+    }));
+    return res.redirect("/");
+});
+
+// third party authentications
+
+
+// GET
+
+// curl -b cookie.txt http://192.168.1.107:5000/api/sin/creators/
+app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){
+    var data = {username: escape(req.params.username)};
+    user.getCreators(data, database, function(err, creatorLst, info){
+        if (err) return res.status(500).end(err);
+        //if (!creators) return res.status(info.status).end(info.msg);
+        return res.json(creatorLst);
+    });
+});
+
+// curl -b cookie.txt http://192.168.1.107:5000/api/admin/subscriptions/
+app.get('/api/:username/subscriptions/', isAuthenticated, function(req, res, next){
+    var data = {username: escape(req.params.username)};
+    user.getSubscribers(data, database, function(err, subLst, info){
+        if(err) return res.status(500).end(err);
+        //if(!subLst) return res.status(info.status).end(info.msg);
+        return res.json(subLst);
+    });
+    
+});
+
+// UPLOAD
+// curl -b cookie.txt -X POST -F "title=extella" -F "file=@extella_loop.mp4" -F "description=Loop" http://192.168.1.107:5000/api/admin/uploads/
+app.post('/api/:username/uploads/', isAuthenticated, upload.single("file"), function(req, res, next){
+    if (!('title' in req.body)) return res.status(400).end('title is missing');
+    if (!('description' in req.body)) return res.status(400).end('description is missing');
+    var username = req.user.username;
+    if(username !== req.params.username) return res.status(403).end('username mismatched'); 
+    var title = escapeInput(req.body.title);
+    var description = escapeInput(req.body.description);
+    user.getUser(username, database, function(err, userObj){
+        if (err) return res.status(500).end(err);
+        // check if the user exists and is the user a creator
+        if (!userObj) return res.status(404).end("user "+ username + " not found");
+        if (!userObj.isCreator) return res.status(403).end("user "+ username + " is not a creator");
+        stream = cloudinary.v2.uploader.upload_stream({resource_type: 'raw'}, function(err, result) {
+            if (err) return res.status(500).end(err);
+            videoContent = {poster: username, title: title, description: description};
+            video.addVideo(res, req, result, videoContent, database, function(){});
+        });
+        // upload the video
+        stream.end(req.file.buffer);
+    });
+});
+
+// GET
+app.get('/api/videos/:videoId/', isAuthenticated, function(req, res, next){
+    video.getVideo(res, req, escapeInput(req.params.videoId), database, function(){});
+});
+
+
+// get all the videos object given an creator's username
+// curl -b cookie.txt http://192.168.1.107:5000/api/admin/videos/
+app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
+    var creator = escapeInput(req.params.creator);
+    if(creator === req.user.username){
+        video.getAllVideosFromCreator(res, req, creator, database, function(){});
+    }else{
+        user.isSubscribed({creator: creator, subscriber:req.user.username}, database, function(subscribed){
+            if (subscribed) return video.getAllVideosFromCreator(res, req, creator, database, function(){});
+            return res.status(403).end("not a subscriber of creator: " + creator);
+        });
+    }
+});
+
+
+// add a subscriber
+// curl -X POST -b cookie.txt http://192.168.1.107:5000/api/admin/addSub/asdf/
+app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res, next){
+    var creator = req.user.username;
+    var subscriber = escape(req.params.subscriber);
+    if(creator !== escape(req.params.creator)) return res.status(403).end("username mismatched");
+    var data = {creator: creator, subscriber: subscriber};
+    user.addSubscriber(data, database, function(err, userObj, info){
+        if(err) return res.status(500).end(err);
+        if(!userObj) return res.status(info.status).end(info.msg);
+        return res.json("user " + userObj.username + " added as subscriber");
+    });
+}); 
+
+
+// paypal related
+
+// start a payment process to make creator
+app.get('/api/payment/makeCreator/', isAuthenticated, function(req, res, next){
+    // create payment object 
+    var payment = {
+            "intent": "authorize",
+    "payer": {
+        "payment_method": "paypal"
+    },
+    "redirect_urls": {
+        "return_url": "http://localhost:5000/payment/makeCreator/success/",
+        "cancel_url": "http://localhost:5000/err"
+    },
+    "transactions": [{
+        "amount": {
+            "total": 25.00,
+            "currency": "USD"
+        },
+        "description": " Becoming a creator on Videon"
+    }]
+    }
+    
+    // call the create Pay function 
+    createPay( payment ) 
+        .then( ( transaction ) => {
+            var id = transaction.id; 
+            var links = transaction.links;
+            var counter = links.length; 
+            while( counter -- ) {
+                if ( links[counter].method == 'REDIRECT') {
+                    console.log("ran");
+                    // redirect to paypal where user approves the transaction 
+                    return res.redirect( links[counter].href )
+                }
+            }
+        })
+        .catch( ( err ) => { 
+            console.log( err ); 
+            res.redirect('/err');
+        });
+});
+
+// On payment success for being creator
+app.get('/payment/makeCreator/success/', isAuthenticated, function(req, res, next){
+    console.log(req.query.paymentId); 
+    console.log(req.user.username);
+    if(!req.query.paymentId) return res.status(400).end("No payment received");
+    user.makeCreator({username: req.user.username}, database, function(err, result, info){
+        if(err) return res.status(500).end(err);
+        // redirect user back to index
+        return res.redirect('/index.html'); 
+    });
+    
+});
+
+// error page 
+app.get('/err' , (req , res) => {
+    console.log(req.query); 
+    res.redirect('/err.html'); 
+})
+
+
+// helper functions 
+var createPay = ( payment ) => {
+    return new Promise( ( resolve , reject ) => {
+        paypal.payment.create( payment , function( err , payment ) {
+         if ( err ) {
+             reject(err); 
+         }
+        else {
+            resolve(payment); 
+        }
+        }); 
+    });
+}           

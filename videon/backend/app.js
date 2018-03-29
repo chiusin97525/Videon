@@ -113,6 +113,7 @@ app.use(function(req, res, next){
     next();
 });
 
+
 // force https when it is in production environment
 var force_https = function(){
     if(process.env.NODE_ENV === "production"){
@@ -234,13 +235,31 @@ app.get('/logout/', function(req, res, next){
           sameSite: true,
           secure: process.env.USE_SECURE_FLAG
     }));
-    return res.redirect("/");
+    return res.json("logged out");
 });
 
 // third party authentications
 
-
 // GET
+
+// gets the current user in the session
+app.get('/currentUser/', function(req, res, next) {
+    if (!req.session.passport || !req.session.passport.user) return res.json(null);
+    var username = JSON.parse(req.session.passport.user)._id;
+    if (!username) return res.json(null);
+	return res.json(username);
+});
+
+// curl -b cookie.txt http://192.168.1.107:5000/api/creators/
+app.get('/api/creators/', isAuthenticated, function(req, res, next) {
+    MongoClient.connect(uri, function(err, client) {
+        if (err) return res.status(500).end(err);
+        const database = client.db(dbName);
+        user.getAllCreators(req, res, database, function(err, creatorLst, info){
+            return res.json(creatorLst);
+        });
+    });
+});
 
 // curl -b cookie.txt http://192.168.1.107:5000/api/sin/creators/
 app.get('/api/:username/creators/', isAuthenticated, function(req, res, next){

@@ -1,4 +1,133 @@
 #content {
-    overflow: hidden;
+    overflow: auto;
 }
 
+header, .select_video_container, .creator {
+    margin: 20px 20px 20px 20px;
+}
+
+header {
+    font-size: 32px;
+    padding: 10px 10px 10px 10px;
+    border-bottom: 2px solid grey;
+}
+
+#creator_title {
+    border: none;
+    font-style: oblique;
+}
+
+.select_video_container {
+    width: 256px;
+    height: 180px;
+    float: left;
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.creator {
+    background-color: #252525;
+    border: 1px solid #252525;
+    width: 256px;
+    height: 144px;
+    text-align: center;
+    float: left;
+}
+.creator .btn {
+    margin: 10px 10px 10px 10px;
+    line-height: 16px;
+}
+.creator div, .video_title {
+    color: white;
+    padding: 5px 0px 5px 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.creator:hover {
+    background-color: #3f3f3f;
+}
+
+.video_title {
+    padding: 5px 5px 5px 5px;
+    width: 256px;
+    color: black;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+}
+
+.select_video {
+    position: relative;
+}
+
+.play_button {
+    z-index: 3;
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+}
+
+.play_button:hover {
+    background-image:url("../media/play_button.png");
+    background-size: 100px 100px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.thumbnail {
+    z-index: 1;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    width: 256px;
+    height: 144px;
+}
+
+#video_container {
+    width: 1280px;
+    display: block;
+    margin: 0 auto;
+}
+
+.video {
+    margin: 20px 0px 0px 0px;
+}
+
+#about_video {
+    padding: 1px 1px 1px 1px;
+}
+
+#current_title {
+    font-size: 30px;
+}
+
+#current_upDate {
+    color: #676767;
+}
+#current_upDate, #current_desc {
+    font-size: 20px;
+}
+
+#add_sub_container {
+    margin: 20px 20px 20px 20px;
+    border: 1px solid #252525;
+    width: 200px;
+}
+
+#add_sub_title, #sub_name, #submit_sub{
+    display: block;
+    float: left;
+    margin: 5px 5px 5px 5px;
+}

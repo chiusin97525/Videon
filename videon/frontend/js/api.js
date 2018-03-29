@@ -16,6 +16,25 @@ var api = (function(){
     }
 
 
+    function sendFiles(method, url, data, callback){
+        var formdata = new FormData();
+        Object.keys(data).forEach(function(key){
+            var value = data[key];
+            formdata.append(key, value);
+        });
+        var xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            if (xhr.status !== 200) callback("[" + xhr.status + "]" + xhr.responseText, null);
+            else {
+                var res = JSON.parse(xhr.responseText);
+                callback(null, res);
+            }
+        };
+        xhr.open(method, url, true);
+        xhr.send(formdata);
+    }
+
+
     var module = {};
 
     /*
@@ -25,10 +44,8 @@ var api = (function(){
         isCreator: Boolean
     */
 
-    module.getCurrentUser = function(){
-        var l = document.cookie.split("username=");
-        if (l.length > 1) return l[1];
-        return null;
+    module.getCurrentUser = function(callback){
+        send("GET", '/currentUser/', null, callback);
     }
 
 
@@ -44,12 +61,17 @@ var api = (function(){
 
     module.logout = function(callback) {
         // get ; nothing ; something like /logout/
-        send("POST", '/logout/', null, callback);
+        send("GET", '/logout/', null, callback);
     };
 
     module.getCreators = function(username, callback) {
         // get ; something like api/:username/creators
         send("GET", '/api/' + username + '/creators/', null, callback);
+    };
+
+    module.getAllCreators = function(callback) {
+        // get ; something like api/creators
+        send("GET", '/api/creators', null, callback);
     };
 
     module.getSubscribers = function(username, callback) {
@@ -63,12 +85,14 @@ var api = (function(){
         send("POST", '/api/creators/', {username:username}, callback);
     };
 
-    module.addSubscriber = function(subscriber, creator, callback) {
-        //
+    module.addSubscriber = function(creator, subscriber, callback) {
+        // change url to a better one later
+        send("POST", '/api/' + creator + '/addSub/' + subscriber + '/', null, callback);
     };
 
-    module.uploadVideo = function(username, video, callback) {
-        // post ; {username:username}
+    module.uploadVideo = function(username, title, description, video, callback) {
+        // post ; 
+        sendFiles("POST", '/api/' + username + '/uploads/', {title:title, description:description, file:video}, callback);
     };
 
     module.getVideo = function(videoId, callback) {
@@ -76,7 +100,7 @@ var api = (function(){
     };
 
     module.getAllVideoObjects = function(username, callback) {
-
+        send("GET", '/api/' + username + '/videos/', null, callback);
     };
 
     return module;

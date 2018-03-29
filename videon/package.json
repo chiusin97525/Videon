@@ -23,6 +23,7 @@
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
     "paypal-rest-sdk": "^1.8.1",
-    "validator": "^9.4.1"
+    "validator": "^9.4.1",
+    "videojs-contrib-hls": "^5.14.0"
   }
 }

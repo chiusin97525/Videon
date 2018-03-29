@@ -5,10 +5,9 @@
 
     window.addEventListener('load', function(){
 
-        if (api.getCurrentUser() != "") {
-            location.href = "/";
-        }
-
+        api.getCurrentUser(function(user) {
+            if (user) location.href = "/";
+        });
         function submit(){
             console.log(document.querySelector("form").checkValidity());
             if (document.querySelector("form").checkValidity()){
@@ -18,7 +17,6 @@
                     if (err) document.querySelector('.alert').innerHTML = err;
                     else window.location = '/';
                 });
-                //window.location = '/';
             }
         }
 

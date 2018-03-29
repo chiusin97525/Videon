@@ -61,6 +61,19 @@ module.exports = (function(){
         collection.findOne({_id: username}, callback);
     }
 
+
+    user.getAllCreators = function(req, res, database, callback) {
+        var collection = database.collection(collectionUsers);
+        collection.find({isCreator: true}).toArray(function(err, creators) {
+            if (err) return callback(err, null, null);
+            var creatorsLst = [];
+            creators.forEach(function(entry){
+                creatorsLst.push(entry._id);
+            });
+            return callback(null, creatorsLst, null);
+        });
+    }
+
     user.getCreators = function(data, database, callback){
         var collection = database.collection(collectionSubs);
         collection.find({subscriber: data.username}, {fields:{creator:1, _id: 0}}).toArray(function(err, creators){

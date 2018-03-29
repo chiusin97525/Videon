@@ -60,8 +60,12 @@ form {
 	border-radius: 2px;
 }
 
-.btn:hover {
+.btnEffect:hover {
 	background-color: #252525;
+}
+
+#upload_button, #my_page_button {
+	width: 210px;
 }
 
 .redirect {
@@ -69,8 +73,23 @@ form {
 	padding: 5px 5px 5px 5px;
 }
 
-
 .alert{
 	font-size: 10px;
     color: red;
+}
+
+#upload_container{
+	width: 600px;
+}
+
+#video_description, #video_title, #video_file {
+	width: 300px;
+}
+
+#login_username, #login_password {
+	width: 158px;
+}
+
+.hidden {
+	display: none;
 }

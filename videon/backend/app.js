@@ -11,6 +11,7 @@ const forceSsl = require('force-ssl-heroku');
 const MongoClient = require('mongodb').MongoClient;
 const validator = require('validator');
 const cloudinary = require('cloudinary');
+const paypal = require('paypal-rest-sdk');
 
 const app = express();
 
@@ -21,6 +22,17 @@ const video = require('./video');
 // custom messages
 const ERRMSG_BAD_USERNAME = "Bad username input";
 const ERRMSG_BAD_EMAIL = "Not a valid email address";
+
+// frontend files
+app.use(express.static('frontend'));
+
+// paypal configuration
+paypal.configure({
+  'mode': 'sandbox',
+  'client_id': 'Aa8C2cbgjdXZt2n9Xpv3P8KWuKp9rjNPDVabxL4sQ4Tl5IprO11FlgZdVAP36nlksQlyua0lI_pWfV36', // please provide your client id here 
+  'client_secret': 'EOE4bq_9SDZK3ZmAPsdVhXu_RMbSPii86Nl8rALeIiLXcyS5YzEU1oeaWLuUcuxx1jwchWJx9OpQJxzd' // provide your client secret here 
+});
+
 
 // database server connection setting
 var uri;
@@ -67,7 +79,7 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     maxAge: 60 * 60 * 24 * 7,
-    cookie: {httpOnly: true, sameSite: true}
+    cookie: {httpOnly: true, sameSite: false }
 }));
 
 // passport settings
@@ -75,30 +87,27 @@ const passport = require('passport');
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.serializeUser(function(username, done) {
-    done(null, JSON.stringify(username));
+passport.serializeUser(function(userObj, done) {
+    done(null, JSON.stringify(userObj));
 });
 
-passport.deserializeUser(function(username, done) {
-    done(null, JSON.parse(username));
+passport.deserializeUser(function(userObj, done) {
+    done(null, JSON.parse(userObj));
 });
 
 // multer setting, storing buffer in memory
 const storage = multer.memoryStorage();
 const upload = multer({storage});
 
-// app.use(function(req, res, next){
-//     if(req.user) next();
-//     else res.redirect('/login.html');
-// });
 
 app.use(function(req, res, next){
+    console.log(req.session);
     if(!req.user) req.user = {username:""};
     var username = req.user.username;
     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
           path : '/', 
-          maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-          sameSite: true,
+          maxAge: 60 * 60 * 24 * 7,
+          sameSite: false ,
           secure: process.env.USE_SECURE_FLAG
     }));
     next();
@@ -112,9 +121,6 @@ var force_https = function(){
     }
 }
 force_https();
-
-// frontend files
-app.use(express.static('frontend'));
 
 
 // storage server connection setting
@@ -282,7 +288,7 @@ app.post('/api/:username/uploads/', isAuthenticated, upload.single("file"), func
 });
 
 // GET
-app.get('/api/:videoId/', isAuthenticated, function(req, res, next){
+app.get('/api/videos/:videoId/', isAuthenticated, function(req, res, next){
     video.getVideo(res, req, escapeInput(req.params.videoId), database, function(){});
 });
 
@@ -302,8 +308,6 @@ app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
 });
 
 
-//
-
 // add a subscriber
 // curl -X POST -b cookie.txt http://192.168.1.107:5000/api/admin/addSub/asdf/
 app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res, next){
@@ -318,4 +322,80 @@ app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res
     });
 }); 
 
-// DELETE
+
+// paypal related
+
+// start a payment process to make creator
+app.get('/api/payment/makeCreator/', isAuthenticated, function(req, res, next){
+    // create payment object 
+    var payment = {
+            "intent": "authorize",
+    "payer": {
+        "payment_method": "paypal"
+    },
+    "redirect_urls": {
+        "return_url": "http://localhost:5000/payment/makeCreator/success/",
+        "cancel_url": "http://localhost:5000/err"
+    },
+    "transactions": [{
+        "amount": {
+            "total": 25.00,
+            "currency": "USD"
+        },
+        "description": " Becoming a creator on Videon"
+    }]
+    }
+    
+    // call the create Pay function 
+    createPay( payment ) 
+        .then( ( transaction ) => {
+            var id = transaction.id; 
+            var links = transaction.links;
+            var counter = links.length; 
+            while( counter -- ) {
+                if ( links[counter].method == 'REDIRECT') {
+                    console.log("ran");
+                    // redirect to paypal where user approves the transaction 
+                    return res.redirect( links[counter].href )
+                }
+            }
+        })
+        .catch( ( err ) => { 
+            console.log( err ); 
+            res.redirect('/err');
+        });
+});
+
+// On payment success for being creator
+app.get('/payment/makeCreator/success/', isAuthenticated, function(req, res, next){
+    console.log(req.query.paymentId); 
+    console.log(req.user.username);
+    if(!req.query.paymentId) return res.status(400).end("No payment received");
+    user.makeCreator({username: req.user.username}, database, function(err, result, info){
+        if(err) return res.status(500).end(err);
+        // redirect user back to index
+        return res.redirect('/index.html'); 
+    });
+    
+});
+
+// error page 
+app.get('/err' , (req , res) => {
+    console.log(req.query); 
+    res.redirect('/err.html'); 
+})
+
+
+// helper functions 
+var createPay = ( payment ) => {
+    return new Promise( ( resolve , reject ) => {
+        paypal.payment.create( payment , function( err , payment ) {
+         if ( err ) {
+             reject(err); 
+         }
+        else {
+            resolve(payment); 
+        }
+        }); 
+    });
+}           

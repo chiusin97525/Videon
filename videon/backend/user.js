@@ -126,6 +126,18 @@ module.exports = (function(){
         });
     }
 
+    user.makeCreator = function(data, database, callback){
+        var username = data.username;
+        console.log(username);
+        if (!username) return callback("no user", null, null);
+        var userCollection = database.collection(collectionUsers);
+        userCollection.update({_id:username}, {"$set":{isCreator: true}}, function(err, result){
+            if(err) return callback(err, null, null);
+            return callback(null, null, null);
+        });
+
+    }
+
 
     return user;
 })();

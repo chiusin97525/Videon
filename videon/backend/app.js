@@ -18,6 +18,7 @@ const app = express();
 // require custom modules
 const user = require('./user');
 const video = require('./video');
+const payment = require('./payment');
 
 // custom messages
 const ERRMSG_BAD_USERNAME = "Bad username input";
@@ -101,7 +102,6 @@ const upload = multer({storage});
 
 
 app.use(function(req, res, next){
-    console.log(req.session);
     if(!req.user) req.user = {username:""};
     var username = req.user.username;
     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
@@ -188,6 +188,23 @@ var escapeInput = function(input){
     return validator.escape(input);
 };
 //----------------------------------------------------------------------------------
+
+// helper functions 
+var createPay = ( paymentObj ) => {
+    return new Promise( ( resolve , reject ) => {
+        paypal.payment.create( paymentObj , function( err , paymentObj ) {
+         if ( err ) {
+             reject(err); 
+         }
+        else {
+            resolve(paymentObj); 
+        }
+        }); 
+    });
+}           
+//----------------------------------------------------------------------------------
+
+
 
 // SIGN IN/OUT/UP
 
@@ -347,33 +364,49 @@ app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res
 // start a payment process to make creator
 app.get('/api/payment/makeCreator/', isAuthenticated, function(req, res, next){
     // create payment object 
-    var payment = {
-            "intent": "authorize",
-    "payer": {
-        "payment_method": "paypal"
-    },
-    "redirect_urls": {
-        "return_url": "http://localhost:5000/payment/makeCreator/success/",
-        "cancel_url": "http://localhost:5000/err"
-    },
-    "transactions": [{
-        "amount": {
-            "total": 25.00,
-            "currency": "USD"
-        },
-        "description": " Becoming a creator on Videon"
-    }]
-    }
+    var paymentObj = payment.generateMakeCreatorPaymentObject();
+    console.log(paymentObj);
     
     // call the create Pay function 
-    createPay( payment ) 
+    createPay( paymentObj ) 
         .then( ( transaction ) => {
             var id = transaction.id; 
             var links = transaction.links;
             var counter = links.length; 
             while( counter -- ) {
                 if ( links[counter].method == 'REDIRECT') {
-                    console.log("ran");
+                    // redirect to paypal where user approves the transaction 
+                    return res.redirect( links[counter].href )
+                }
+            }
+        })
+        .catch( ( err ) => { 
+            console.log( err ); 
+            res.redirect('/err');
+        });
+});
+
+app.get('/api/payment/subscribe/:creatorId/', isAuthenticated, function(req, res, next){
+    var creator = req.params.creatorId;
+    // make sure the creator exists and is a creator
+    user.getUser(creator, database, function(err, userObj){
+        if (err) return res.status(500).end(err);
+        // check if the user exists and is the user a creator
+        if (!userObj) return res.status(404).end("user "+ username + " not found");
+        if (!userObj.isCreator) return res.status(403).end("user "+ username + " is not a creator");
+    });
+    // create payment object 
+    var paymentObj = payment.generateSubscriptionPaymentObject(creator);
+    console.log(paymentObj);
+    
+    // call the create Pay function 
+    createPay( paymentObj ) 
+        .then( ( transaction ) => {
+            var id = transaction.id; 
+            var links = transaction.links;
+            var counter = links.length; 
+            while( counter -- ) {
+                if ( links[counter].method == 'REDIRECT') {
                     // redirect to paypal where user approves the transaction 
                     return res.redirect( links[counter].href )
                 }
@@ -386,16 +419,27 @@ app.get('/api/payment/makeCreator/', isAuthenticated, function(req, res, next){
 });
 
 // On payment success for being creator
-app.get('/payment/makeCreator/success/', isAuthenticated, function(req, res, next){
-    console.log(req.query.paymentId); 
-    console.log(req.user.username);
+app.get('/api/payment/makeCreator/success/', isAuthenticated, function(req, res, next){
+    // if there is no paymentId returned, rejects the request
     if(!req.query.paymentId) return res.status(400).end("No payment received");
     user.makeCreator({username: req.user.username}, database, function(err, result, info){
         if(err) return res.status(500).end(err);
         // redirect user back to index
         return res.redirect('/index.html'); 
     });
-    
+});
+
+// On payment success for being creator
+app.get('/api/payment/subscribe/:creatorId/success/', isAuthenticated, function(req, res, next){
+    // if there is no paymentId returned, rejects the request
+    if(!req.query.paymentId) return res.status(400).end("No payment received");
+    var data = {creator: req.params.creatorId, subscriber: req.user.username};
+    user.addSubscriber(data, database, function(err, userObj, info){
+        if(err) return res.status(500).end(err);
+        if(!userObj) return res.status(info.status).end(info.msg);
+        //return res.json("user " + userObj.username + " added as subscriber");
+        return res.redirect('/index.html'); 
+    });
 });
 
 // error page 
@@ -405,16 +449,3 @@ app.get('/err' , (req , res) => {
 })
 
 
-// helper functions 
-var createPay = ( payment ) => {
-    return new Promise( ( resolve , reject ) => {
-        paypal.payment.create( payment , function( err , payment ) {
-         if ( err ) {
-             reject(err); 
-         }
-        else {
-            resolve(payment); 
-        }
-        }); 
-    });
-}           

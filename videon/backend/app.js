@@ -12,6 +12,7 @@ const MongoClient = require('mongodb').MongoClient;
 const validator = require('validator');
 const cloudinary = require('cloudinary');
 const paypal = require('paypal-rest-sdk');
+const schedule = require('node-schedule');
 
 const app = express();
 
@@ -272,7 +273,7 @@ app.get('/api/creators/', isAuthenticated, function(req, res, next) {
     MongoClient.connect(uri, function(err, client) {
         if (err) return res.status(500).end(err);
         const database = client.db(dbName);
-        user.getAllCreators(req, res, database, function(err, creatorLst, info){
+        user.getAllCreators(database, function(err, creatorLst, info){
             return res.json(creatorLst);
         });
     });
@@ -449,3 +450,38 @@ app.get('/err' , (req , res) => {
 })
 
 
+// payout on the 9th of every month
+var j = schedule.scheduleJob('0 0 9 * *', payoutMain);
+
+var payoutMain = function(){
+    console.log('Payout');
+    var data = [];
+    var creators = user.getAllCreators(database, function(err, creatorLst, info){
+        if (err) return err;
+        if (!creatorLst) return null;
+        creatorLst.forEach(function(creator){
+            user.getUser(creator, database, function(err, userObj){
+                if (err) return err;
+                user.getSubscribers({username:creator}, database, function(err, lst, info){
+                    data.push({...userObj, subscriberCount: lst.length});
+                });
+            });
+        });
+        payoutCreators(data)
+    });
+    // reschedule the job for next month
+    j = schedule.scheduleJob('0 0 9 * *', payoutMain);
+}
+
+var payoutCreators = function(data){
+    payoutObj = payment.createPayoutItem(data);
+    paypal.payout.create(create_payout_json, function (error, payout) {
+        if (error) {
+            console.log(error.response);
+            throw error;
+        } else {
+            console.log("Create Payout Response");
+            console.log(payout);
+        }
+    });
+}

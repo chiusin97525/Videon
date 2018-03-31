@@ -62,7 +62,7 @@ module.exports = (function(){
     }
 
 
-    user.getAllCreators = function(req, res, database, callback) {
+    user.getAllCreators = function(database, callback) {
         var collection = database.collection(collectionUsers);
         collection.find({isCreator: true}).toArray(function(err, creators) {
             if (err) return callback(err, null, null);
@@ -151,7 +151,7 @@ module.exports = (function(){
 
     }
 
-    
+
 
 
     return user;

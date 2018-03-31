@@ -11,6 +11,7 @@ const forceSsl = require('force-ssl-heroku');
 const MongoClient = require('mongodb').MongoClient;
 const validator = require('validator');
 const cloudinary = require('cloudinary');
+const cors = require('cors');
 const paypal = require('paypal-rest-sdk');
 const schedule = require('node-schedule');
 
@@ -52,7 +53,7 @@ var store = new MongoDBStore({
 var database;
 MongoClient.connect(uri, function(err, client) {
     if (err) return console.log(err);
-    console.log("Ddatabase connection success");
+    console.log("Database connection success");
     database = client.db(dbName);
 });
 
@@ -62,6 +63,20 @@ const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+// cors => allows cross origin requests from client side
+var allowedOrigins = ['http://localhost:8080',
+                      'https://videon.me/'];
+app.use(cors({
+    origin: function(origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            var msg = 'The CORS policy for this site does not allow access from specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+}));
 
 app.use(session({
     secret: 'blackbird flies',
@@ -188,7 +203,7 @@ app.post('/register/',checkUsername, checkEmail, function (req, res, next) {
 });
 
 // curl -X POST -d "username=admin&password=admin" -c cookie.txt http://192.168.1.107:5000/login/
-app.post('/login/',checkUsername, function (req, res, next) {
+app.post('/login/', function (req, res, next) {
     if (!('username' in req.body)) return res.status(400).end('username is missing');
     if (!('password' in req.body)) return res.status(400).end('password is missing');
     // authenticate the user
@@ -203,7 +218,7 @@ app.post('/login/',checkUsername, function (req, res, next) {
               sameSite: true,
               secure: process.env.USE_SECURE_FLAG
             }));
-            return res.json("user " + userObj.username + " signed in");
+            return res.json(req.user);//res.json("user " + userObj.username + " signed in");
         });
     })(req, res, next);
 });
@@ -228,9 +243,11 @@ app.get('/logout/', function(req, res, next){
 // gets the current user in the session
 app.get('/currentUser/', function(req, res, next) {
     if (!req.session.passport || !req.session.passport.user) return res.json(null);
-    var username = JSON.parse(req.session.passport.user)._id;
-    if (!username) return res.json(null);
-	return res.json(username);
+    //var username = JSON.parse(req.session.passport.user)._id;
+    var user = {username: JSON.parse(req.session.passport.user)._id, 
+                isCreator: JSON.parse(req.session.passport.user).isCreator};
+    if (!user) return res.json(null);
+	return res.json(user);
 });
 
 // curl -b cookie.txt http://192.168.1.107:5000/api/creators/

@@ -62,7 +62,7 @@ module.exports = (function(){
     }
 
 
-    user.getAllCreators = function(req, res, database, callback) {
+    user.getAllCreators = function(database, callback) {
         var collection = database.collection(collectionUsers);
         collection.find({isCreator: true}).toArray(function(err, creators) {
             if (err) return callback(err, null, null);
@@ -138,6 +138,20 @@ module.exports = (function(){
             return callback(true);
         });
     }
+
+    user.makeCreator = function(data, database, callback){
+        var username = data.username;
+        console.log(username);
+        if (!username) return callback("no user", null, null);
+        var userCollection = database.collection(collectionUsers);
+        userCollection.update({_id:username}, {"$set":{isCreator: true}}, function(err, result){
+            if(err) return callback(err, null, null);
+            return callback(null, null, null);
+        });
+
+    }
+
+
 
 
     return user;

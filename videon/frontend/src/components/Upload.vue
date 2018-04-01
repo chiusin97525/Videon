@@ -51,6 +51,10 @@ export default {
             data.append('title', this.title);
             data.append('description', this.description);
             data.append('file', file);
+            if (file.size > 10485760) {
+                document.getElementById('error').innerHTML = "File is larger than 10MB";
+                return;
+            }
             document.getElementById('progress').classList.remove('hidden');
             document.getElementById('submit-video').disabled = true;
             api().post('/api/' + this.creator + '/uploads', data, {

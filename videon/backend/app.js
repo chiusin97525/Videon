@@ -467,7 +467,7 @@ app.get('/api/payment/subscribe/:creatorId/success/', isAuthenticated, function(
 // error page 
 app.get('/err' , (req , res) => {
     console.log(req.query); 
-    res.redirect('/err.html'); 
+    res.redirect('http://localhost:8080/'); 
 })
 
 

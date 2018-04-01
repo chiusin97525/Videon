@@ -30,10 +30,15 @@ import Common from '@/services/common';
 
 export default {
   name: 'App',
+  data() {
+    return {
+      user: {username: '', isCreator: ''}
+    }
+  },
   methods: {
     redirect: function(event) {
 			let self = this;
-			Common.redirect(self);
+			Common.redirectLogin(self);
     },
     
     logout: function(event) {
@@ -42,7 +47,7 @@ export default {
     }
 
   },
-  mounted () {
+  mounted: function () {
     this.redirect();
   }
 }
@@ -53,10 +58,6 @@ export default {
 html {
   width: 100%;
   height: 100%;
-}
-
-body {
-  margin: 0;
 }
 
 #app {
@@ -138,7 +139,7 @@ a.routes:hover {
 }
 
 .fade-enter-active, .fade-leave-active {
-  transition: opacity 1s
+  transition: opacity 0.5s
 }
 
 .fade-enter, .fade-leave-active {
@@ -170,4 +171,94 @@ a.routes:hover {
 #current_title, #current_upDate, #current_desc {
     color: #C3073F;
 }
+
+body {
+    margin: 0;
+    background: #1A1A1D;
+}
+
+h1 {
+    color: white;
+}
+
+.table {
+    margin: 0 auto;
+    width: 70%;
+    color: white;
+}
+
+td {
+    background: #1A1A1D;
+}
+
+td:target {
+    background: #1A1A1D;
+}
+
+thead {
+    font-size: 36px;
+}
+
+#user {
+    color:#C3073F
+}
+
+.subscribed {
+    color: green;
+}
+
+.not-subscribed {
+    color: red;
+}
+
+.visit-page {
+    background-color: #4E4E50;
+}
+
+/*CSS from https://paweljw.github.io/2017/09/vue.js-front-end-app-part-3-authentication/*/
+
+.form-wrapper {
+  background: #fff;
+  width: 50%;
+  margin: 12% auto;
+}
+
+.form-content {
+  width: 220px;
+  padding: 10% 15px;
+  margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+}
+
+.form-heading {
+	color: #C3073F;
+}
+
+.form-content .form-heading,
+.form-content .checkbox {
+  margin-bottom: 10px;
+}
+.form-content .checkbox {
+  font-weight: normal;
+}
+.form-content .form-control {
+  position: relative;
+  height: auto;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 10px;
+  font-size: 16px;
+}
+.form-content .form-control:focus {
+  z-index: 2;
+}
+.form-content input[type="username"], .form-content input[type="password"]  {
+	width: 100%;
+  margin-bottom: 10px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
 </style>

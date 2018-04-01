@@ -1,12 +1,12 @@
 <template>
-    <div class="register-wrapper border border-light">
-		<form class="form-register" @submit.prevent="register">
-			<h2 class="form-register-heading">Register</h2>
+    <div class="form-wrapper border border-light">
+		<form class="form-content" @submit.prevent="register">
+			<h2 class="form-heading">Register</h2>
 			<input v-model="email" type="email" id="inputEmail" class="form-control" placeholder="Email" required autofocus>
-            <input v-model="username" type="username" id="inputUsername" class="form-control" placeholder="Username" required>
-			<input v-model="password" type="password" id="inputPassword" class="form-control" placeholder="Password" required>
-            <input v-model="repassword" type="password" id="inputRePassword" class="form-control" placeholder="Re-Type Password" required>
-			<p>Have an account? <a href='/login'>Login!</a></p>
+            <input v-model="username" type="username" class="form-control" placeholder="Username" required>
+			<input v-model="password" type="password" class="form-control" placeholder="Password" required>
+            <input v-model="repassword" type="password" class="form-control" placeholder="Re-Type Password" required>
+			<p>Have an account? <router-link :to="{name: 'Login'}">Login!</router-link></p>
             <div id="error">{{ message }}</div>
 			<button class="btn" type="submit">Register</button>
             
@@ -32,7 +32,7 @@ export default {
 	methods: {
         redirect: function(event) {
 			let self = this;
-			Common.redirect(self);
+			Common.redirectHome(self);
 		},
         register: function(event) {
             var self = this;
@@ -55,39 +55,8 @@ body {
   background: #1A1A1D;
 }
 
-.register-wrapper {
-  background: #fff;
-  width: 50%;
-  margin: 12% auto;
-}
 
-.form-register {
-  width: 220px;
-  padding: 10% 15px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-}
-.form-register .form-register-heading,
-.form-register .checkbox {
-  margin-bottom: 10px;
-}
-.form-register .checkbox {
-  font-weight: normal;
-}
-.form-register .form-control {
-  position: relative;
-  height: auto;
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
-  padding: 10px;
-  font-size: 16px;
-}
-.form-register .form-control:focus {
-  z-index: 2;
-}
-.form-register input[type="email"], .form-register input[type="username"], .form-register input[type="password"] {
+.form-content input[type="email"], .form-content input[type="username"], .form-content input[type="password"] {
   width: 100%;
   margin-bottom: 10px;
   border-bottom-right-radius: 0;

@@ -5,8 +5,8 @@ export default {
 		api().post('/register/', {email: email, username: username, password: password})
 		.then(response => {
 			if (response.status == '200') {
+				window.location.href = "/login";
 				//event.$router.push('/')
-				window.location.href = "/";
 			}
 		})
 		.catch(function(e) {

@@ -48,5 +48,6 @@ export default new Router({
       component: Upload
     }
   ],
-  mode: 'history'
+  mode: 'history',
+  base: '/'
 })

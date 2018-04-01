@@ -356,7 +356,7 @@ app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
     }else{
         user.isSubscribed({creator: creator, subscriber:req.user.username}, database, function(subscribed){
             if (subscribed) return video.getAllVideosFromCreator(res, req, creator, database, function(){});
-            return res.status(403).end("not a subscriber of creator: " + creator);
+            return res.status(403).end("Not a subscriber of Creator: " + creator);
         });
     }
 });
@@ -367,12 +367,12 @@ app.get('/api/:creator/videos/', isAuthenticated, function(req, res, next){
 app.post('/api/:creator/addSub/:subscriber/', isAuthenticated, function(req, res, next){
     var creator = req.user.username;
     var subscriber = escape(req.params.subscriber);
-    if(creator !== escape(req.params.creator)) return res.status(403).end("username mismatched");
+    if(creator !== escape(req.params.creator)) return res.status(403).end("Username mismatched");
     var data = {creator: creator, subscriber: subscriber};
     user.addSubscriber(data, database, function(err, userObj, info){
         if(err) return res.status(500).end(err);
         if(!userObj) return res.status(info.status).end(info.msg);
-        return res.json("user " + userObj.username + " added as subscriber");
+        return res.json("User " + userObj.username + " added as subscriber");
     });
 }); 
 
@@ -394,13 +394,13 @@ app.get('/api/payment/makeCreator/', isAuthenticated, function(req, res, next){
             while( counter -- ) {
                 if ( links[counter].method == 'REDIRECT') {
                     // redirect to paypal where user approves the transaction 
-                    return res.redirect( links[counter].href )
+                    return res.json( links[counter].href )
                 }
             }
         })
         .catch( ( err ) => { 
             console.log( err ); 
-            res.redirect('/err');
+            res.redirect('http://localhost:8080/mypage?err=true');
         });
 });
 
@@ -410,8 +410,8 @@ app.get('/api/payment/subscribe/:creatorId/', isAuthenticated, function(req, res
     user.getUser(creator, database, function(err, userObj){
         if (err) return res.status(500).end(err);
         // check if the user exists and is the user a creator
-        if (!userObj) return res.status(404).end("user "+ username + " not found");
-        if (!userObj.isCreator) return res.status(403).end("user "+ username + " is not a creator");
+        if (!userObj) return res.status(404).end("User "+ username + " not found");
+        if (!userObj.isCreator) return res.status(403).end("User "+ username + " is not a Creator");
     });
     // create payment object 
     var paymentObj = payment.generateSubscriptionPaymentObject(creator);
@@ -426,13 +426,13 @@ app.get('/api/payment/subscribe/:creatorId/', isAuthenticated, function(req, res
             while( counter -- ) {
                 if ( links[counter].method == 'REDIRECT') {
                     // redirect to paypal where user approves the transaction 
-                    return res.redirect( links[counter].href )
+                    return res.json( links[counter].href );
                 }
             }
         })
         .catch( ( err ) => { 
             console.log( err ); 
-            res.redirect('/err');
+            res.redirect('http://localhost:8080/creator/' + creator + '?subscribe=false');
         });
 });
 
@@ -442,8 +442,12 @@ app.get('/api/payment/makeCreator/success/', isAuthenticated, function(req, res,
     if(!req.query.paymentId) return res.status(400).end("No payment received");
     user.makeCreator({username: req.user.username}, database, function(err, result, info){
         if(err) return res.status(500).end(err);
-        // redirect user back to index
-        return res.redirect('/index.html'); 
+        // set isCreator to true in session
+        var user = JSON.parse(req.session.passport.user);
+        user.isCreator = true;
+        req.session.passport.user = JSON.stringify(user);
+        // redirect user back to original site
+        return res.redirect('http://localhost:8080/mypage');//redirect('/mypage'); 
     });
 });
 
@@ -456,7 +460,7 @@ app.get('/api/payment/subscribe/:creatorId/success/', isAuthenticated, function(
         if(err) return res.status(500).end(err);
         if(!userObj) return res.status(info.status).end(info.msg);
         //return res.json("user " + userObj.username + " added as subscriber");
-        return res.redirect('/index.html'); 
+        return res.redirect('http://localhost:8080/creator/' + data.creator); 
     });
 });
 

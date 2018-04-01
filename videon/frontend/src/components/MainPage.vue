@@ -1,7 +1,13 @@
 <template>
     <div>
         <h1>Welcome <span id="user">{{ user.username }}</span> !</h1>
-        <h1>Creators</h1>
+        <form id="search-form">
+            <h2 class="form-heading-content">Find Creators</h2>
+            <div>
+                <input class="search-field" type="input" placeholder="Find a Creator">
+                <input id="search-button" class="btn content-button" type="submit" value="Find">
+            </div>
+        </form>
         <table class="table table-hover">
             <thead>
             <tr>
@@ -10,13 +16,18 @@
                 <td>Subscribe</td>
             </tr>
             </thead>
-
-            <tbody name="fade" is="transition-group">
+            <tbody v-if="allCreators.length == 0" is="transition-group" name="fade">
+                <tr>
+                    <td><div class="table-value">None</div></td>
+                    <td><div class="table-value">None</div></td>
+                </tr>
+            </tbody>
+            <tbody v-else is="transition-group" name="fade">
                 <tr class="creator table-row" v-for="creator in allCreators" :key="creator">
                     <td><div class="table-value">{{ creator }}</div></td>
                     <td><router-link :to="{name: 'ViewCreator', params: { creator: creator }}" class="btn visit-page">Visit Page</router-link></td>
-                    <td class="not-subscribed" v-if="subscribedTo.indexOf(creator) == -1"><div class="table-value">Not Subscribed!</div></td>
-                    <td class="subscribed" v-else><div class="table-value">Subscribed!</div></td>
+                    <td class="not-subscribed" v-if="subscribedTo.indexOf(creator) == -1"><div class="table-value">✘</div></td>
+                    <td class="subscribed" v-else><div class="table-value">✔</div></td>
                 </tr>
             </tbody>
         </table>
@@ -26,6 +37,7 @@
 <script>
 // imports
 import api from '@/services/api'
+import Common from '@/services/common'
 
 export default {
     data() {
@@ -36,9 +48,14 @@ export default {
         }
     },
     created: function() {
+        this.redirect();
         this.getAllCreators();
     },
     methods: {
+        redirect: function(event) {
+			let self = this;
+			Common.redirectLogin(self);
+        },
         getAllCreators: function(event) {
             api().get('/currentUser')
             .then(response => {
@@ -89,45 +106,24 @@ export default {
 </script>
 
 <style lang="css">
-body {
-    background: #1A1A1D;
-}
 
-h1 {
+.form-heading-content {
     color: white;
 }
-
-.table {
+.search-field {
+    height: 30px;
     margin: 0 auto;
-    width: 70%;
-    color: white;
 }
 
-td {
-    background: #1A1A1D;
+#search-form {
+    margin: 0 auto;
+    position: relative;
+    justify-content: left;
 }
 
-td:target {
-    background: #1A1A1D;
-}
-
-thead {
-    font-size: 36px;
-}
-
-#user {
-    color:#C3073F
-}
-
-.subscribed {
-    color: green;
-}
-
-.not-subscribed {
-    color: red;
-}
-
-.visit-page {
-    background-color: #4E4E50;
+#search-button {
+    position: absolute;
+    bottom: 0;
+    margin: 0px 0px 0px 5px;
 }
 </style>

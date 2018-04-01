@@ -1,6 +1,11 @@
 <template>
     <div>
-        <div id="error"></div>
+        <div id="error">
+            <div v-if="err.length > 0"> 
+                <div>{{ err }}</div> 
+                <button class="btn content-button" v-on:click="subscribe">Subscribe($3.00)</button>
+            </div>
+        </div>
         <div id="page-container">
             <h1><span id="user">{{ creator }}</span></h1>
             <div id="video-container"></div>
@@ -12,14 +17,17 @@
                     <td>Date</td>
                 </tr>
                 </thead>
-
-                <tbody is="transition-group" name="fade">
+                <tbody v-if="videoObjs.length == 0" is="transition-group" name="fade">
+                    <tr>
+                        <td><div class="table-value">None</div></td>
+                        <td><div class="table-value">None</div></td>
+                    </tr>
+                </tbody>
+                <tbody v-else is="transition-group" name="fade">
                     <tr class="videos table-row" v-for="video in videoObjs" :key="video.url">
                         <td><div class="table-value">{{ video.title }}</div></td>
                         <td><div class="table-value">{{ convertDate(video.uploadDate) }}</div></td>
-                        <td><button class="btn content-button" v-on:click="loadVideo(video)">Play</button></td>
-                        <!--td><router-link :to="{name: 'ViewCreator', params: { creator: creator }}" class="btn">Visit Page</router-link></td-->
-                        <!--td><button class="btn btn-danger" v-on:click="deleteItem(item._id)">Delete</button></td-->
+                        <td><button class="btn content-button" v-on:click="loadVideo(video)">▶</button></td>
                     </tr>
                 </tbody>
             </table>
@@ -35,7 +43,8 @@ export default {
     data () {
         return {
             videoObjs:[],
-            creator: ''
+            creator: '',
+            err: ''
         }
     },
     created: function() {
@@ -43,17 +52,15 @@ export default {
         this.getAllVideos();
     },
     methods: {
-        getAllVideos: function() {
+        getAllVideos: function(event) {
+            let self = this;
             api().get('/api/' + this.$route.params.creator + '/videos')
             .then(response => {
-                this.videoObjs = response.data.reverse();
+                self.videoObjs = response.data.reverse();
             })
             .catch(function(e) {
                 if (e.response) {
-                    document.getElementById("error").innerHTML =`
-                    ${e.response.data}
-                    <router-link><button class="btn content-button">Subscribe</div>
-                    `;
+                    self.err = e.response.data;
                     document.getElementById("page-container").classList.add("hidden");
                 }
             })
@@ -82,6 +89,16 @@ export default {
                     <div id="current_desc">${videoObj.description}</div>
                 </div>
             `;
+        },
+        subscribe: function() {
+            console.log("what");
+            api().get('/api/payment/subscribe/' + this.creator)
+            .then(response => {
+                window.location.href = response.data;
+            })
+            .catch(function(e) {
+                if (e.response) console.error(e.response.data);
+            })
         }
     }
 }

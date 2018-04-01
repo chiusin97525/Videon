@@ -3,7 +3,7 @@
         <div v-if="user.isCreator">
             <h1>My Page</h1>
             <router-link :to="{name: 'Upload', params: {creator: user.username}}">
-                <button class="btn content-button">Upload</button>
+                <button class="btn content-button">Upload Video</button>
             </router-link>
             <div id="error"></div>
             <div id="page-container">
@@ -16,7 +16,13 @@
                             <td>Date</td>
                         </tr>
                     </thead>
-                    <tbody is="transition-group" name="fade">
+                <tbody v-if="videoObjs.length == 0" is="transition-group" name="fade">
+                    <tr>
+                        <td><div class="table-value">None</div></td>
+                        <td><div class="table-value">None</div></td>
+                    </tr>
+                </tbody>
+                <tbody v-else is="transition-group" name="fade">
                         <tr class="videos table-row" v-for="video in videoObjs" :key="video.url">
                             <td><div class="table-value">{{ video.title }}</div></td>
                             <td><div class="table-value">{{ convertDate(video.uploadDate) }}</div></td>
@@ -28,7 +34,7 @@
         </div>
         <div v-else>
             <h1>You are currently not a Creator, click below to pay the Creator fees !</h1>
-            <button class="btn content-button">Make Creator ($25)</button>
+            <button class="btn content-button" v-on:click="pay">Make Creator ($25.00)</button>
         </div>
   </div>
 </template>
@@ -43,11 +49,20 @@ export default {
             videoObjs: []
         }
     },
-    created: function() {
+    mounted: function() {
         this.getCurrentUser();
-        
     },
     methods: {
+        pay: function() {
+            let self = this;
+            api().get('/api/payment/makeCreator/')
+            .then(response => {
+                window.location.href = response.data;
+            })
+            .catch(function(e) {
+                if (e.response) console.error(e.response.data);
+            })
+        },
         getCurrentUser: function() {
             let self = this;
             api().get('/currentUser')
@@ -104,6 +119,8 @@ export default {
 }
 </script>
 
+
 <style lang="css">
+
 
 </style>

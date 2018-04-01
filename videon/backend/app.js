@@ -64,7 +64,7 @@ app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 // cors => allows cross origin requests from client side
-var allowedOrigins = ['http://localhost:8080',
+var allowedOrigins = ['http://localhost:5000',
                       'https://videon.me/'];
 app.use(cors({
     origin: function(origin, callback) {
@@ -184,8 +184,6 @@ var createPay = ( paymentObj ) => {
     });
 }           
 //----------------------------------------------------------------------------------
-
-
 
 // SIGN IN/OUT/UP
 
@@ -370,7 +368,7 @@ app.get('/api/payment/makeCreator/', isAuthenticated, function(req, res, next){
 });
 
 app.get('/api/payment/subscribe/:creatorId/', isAuthenticated, function(req, res, next){
-    var creator = req.params.creatorId;
+    var creator = escapeInput(req.params.creatorId);
     // make sure the creator exists and is a creator
     user.getUser(creator, database, function(err, userObj){
         if (err) return res.status(500).end(err);

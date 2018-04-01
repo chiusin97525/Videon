@@ -32,34 +32,22 @@ app.use(express.static('frontend'));
 
 // paypal configuration
 paypal.configure({
-  'mode': 'sandbox',
-  'client_id': 'Aa8C2cbgjdXZt2n9Xpv3P8KWuKp9rjNPDVabxL4sQ4Tl5IprO11FlgZdVAP36nlksQlyua0lI_pWfV36', // please provide your client id here 
-  'client_secret': 'EOE4bq_9SDZK3ZmAPsdVhXu_RMbSPii86Nl8rALeIiLXcyS5YzEU1oeaWLuUcuxx1jwchWJx9OpQJxzd' // provide your client secret here 
+  'mode': process.env.PAYPAL_MODE,
+  'client_id': process.env.PAYPAL_CLIENT_ID, 
+  'client_secret': process.env.PAYPAL_CLIENT_SECRET // provide your client secret here 
 });
 
 
 // database server connection setting
-var uri;
-var dbName;
-var select_database = function(){
-    if(process.env.NODE_ENV === "production"){
-        // mlab mongodb server
-        uri = "mongodb://admin:adminkernel@ds213239.mlab.com:13239/videon";
-        dbName = "videon";
-    }else{
-        // Altas mongodb server for testing
-        uri = "mongodb+srv://admin:adminkernel@videon0-rs9ub.mongodb.net/test";
-        dbName = "test";
-    }
-}
-select_database();
+var uri = process.env.MONGODB_DATABASE_URI;
+var dbName = process.env.MONGODB_DATABASE_NAME;
 
 // session store
 var MongoDBStore = require('connect-mongodb-session')(session);
 var store = new MongoDBStore({
         uri: uri,
-        databaseName: 'connect_mongodb_session',
-        collection: 'sessions'
+        databaseName: process.env.MONGODB_SESSION_DATABASE_NAME,
+        collection: process.env.MONGODB_SESSION_COLECTION
     });
 
 // database
@@ -77,7 +65,7 @@ app.listen(PORT, () => console.log(`Listening on ${ PORT }`));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 // cors => allows cross origin requests from client side
-var allowedOrigins = ['http://localhost:8080',
+var allowedOrigins = ['http://localhost:5000',
                       'https://videon.me/'];
 app.use(cors({
     origin: function(origin, callback) {
@@ -140,38 +128,15 @@ var force_https = function(){
 }
 force_https();
 
-
-// storage server connection setting
-var select_storage_server = function(){
-    if(process.env.NODE_ENV === "production"){
-        cloudinary.config({ 
-          cloud_name: 'hlp3qspme', 
-          api_key: '561236676358831', 
-          api_secret: 'VQga8h18map_-dvJMeiBbnHsj8s' 
+cloudinary.config({ 
+          cloud_name: process.env.STORAGE_SERVER_NAME, 
+          api_key: process.env.STORAGE_API_KEY, 
+          api_secret: process.env.STORAGE_API_SECRET 
         });
-    }else{
-        cloudinary.config({ 
-          cloud_name: 'videonstorageserver', 
-          api_key: '897296893562352', 
-          api_secret: 'YuGk3JnctgsDobyJOCSM5Ws7SVY' 
-        });
-    }
-}
-select_storage_server();
 
 
 // third party authentication settings
-//const TwitterStrategy = require('passport-twitter').Strategy;
 const LocalStrategy = require('passport-local').Strategy;
-
-// passport.use(new TwitterStrategy({
-//         consumerKey: process.env.TWITTER_CONSUMER_KEY,
-//         consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
-//         callbackURL: process.env.TWITTER_CALLBACK_URL
-//     }, function(token, tokenSecret, profile, callback){
-        
-//     }
-// ));
 
 passport.use(new LocalStrategy(
         function(username, password, done){
@@ -220,8 +185,6 @@ var createPay = ( paymentObj ) => {
     });
 }           
 //----------------------------------------------------------------------------------
-
-
 
 // SIGN IN/OUT/UP
 
@@ -406,7 +369,7 @@ app.get('/api/payment/makeCreator/', isAuthenticated, function(req, res, next){
 });
 
 app.get('/api/payment/subscribe/:creatorId/', isAuthenticated, function(req, res, next){
-    var creator = req.params.creatorId;
+    var creator = escapeInput(req.params.creatorId);
     // make sure the creator exists and is a creator
     user.getUser(creator, database, function(err, userObj){
         if (err) return res.status(500).end(err);

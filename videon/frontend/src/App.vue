@@ -101,7 +101,7 @@ a.routes:hover {
 #logout-button {
   position: absolute;
   right: 0;
-  margin: 4px 10px 10px 10px;
+  margin: 10px 10px 10px 10px;
   height: 30px;
 }
 

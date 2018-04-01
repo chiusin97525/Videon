@@ -3,11 +3,16 @@
         <div class="upload-wrapper border border-light">
             <form id="upload-form" class="form-upload" method="post" enctype="multipart/form-data" @submit.prevent="upload">
                 <div class="form-upload-heading">Upload</div>
-                <input type="text" id="video-title" class="form-control" name="title" placeholder="Video Title"/>
-                <input type="file" id="video-file" class="form-control" name="file"/>
-                <textarea id="video-description" class="form-control" rows=3 placeholder="Video Description"></textarea>
+                <span>*Can only upload videos with less than 10MB for now</span>
+                <input type="text" v-model="title" id="video-title" class="form-control" name="title" placeholder="Video Title"/>
+                <input type="file" id="video-file" class="form-control" name="file" accept="video/*"/>
+                <textarea v-model="description" id="video-description" class="form-control" rows=3 placeholder="Video Description"></textarea>
                 <input type="submit" id="submit-video" class="btn content-button" value="Upload"/>
-                <div id="verify_upload"></div>
+                <div id="progress" class="hidden">
+                    <div id="bar"></div>
+                </div>
+                <div id="error">
+                </div>
             </form>    
         </div>
     </div>
@@ -19,28 +24,51 @@ import api from '@/services/api';
 export default {
     data () {
         return {
-            creator: ''
+            creator: '',
+            title: '',
+            description: '',
+            progressValue: 0
         }
     },
     created: function() {
         this.creator = this.$route.params.creator;
     },
     methods: {
-        upload: function() {
+        updateBar: function(loaded, total) {
+            var bar = document.getElementById('bar');
+            if (loaded < total) {
+                var percent = (loaded/total) * 100; 
+                bar.style.width = percent + '%';
+                bar.innerHTML = percent * 1 + '%';
+            }else {
+                bar.style.width = '100%';
+                bar.innerHTML = `Sending to server...`;
+            }
+        },
+        upload: function(event) {
             const data = new FormData();
-            var title = document.getElementById("video-title").value;
             var file = document.getElementById("video-file").files[0];
-            var description = document.getElementById("video-description").value;
-            data.append('title', title);
-            data.append('description', description);
+            data.append('title', this.title);
+            data.append('description', this.description);
             data.append('file', file);
-            api().post('/api/' + this.creator + '/uploads', data)
+            document.getElementById('progress').classList.remove('hidden');
+            document.getElementById('submit-video').disabled = true;
+            api().post('/api/' + this.creator + '/uploads', data, {
+                onUploadProgress: (progressEvent) => {
+                    if (progressEvent.lengthComputable) {
+                        this.updateBar(progressEvent.loaded, progressEvent.total);
+                    }
+                }
+            })
             .then(response => {
-                this.$router.push('/mypage');
+                var bar = document.getElementById('bar');
+                bar.innerHTML = "Done"
+                document.getElementById('submit-video').disabled = false;
+                document.getElementById('upload-form').reset();
             })
             .catch(function(e) {
                 if (e.response) {
-                    document.getElementById('verify_upload').innerHTML = e.response.data;
+                    document.getElementById('error').innerHTML = e.response.data;
                 }
             })
         }
@@ -49,6 +77,21 @@ export default {
 </script>
 
 <style>
+#progress {
+    margin-top: 30px;
+    width: 100%;
+    background-color: grey;
+}
+
+#bar {
+    width: 0%;
+    height: 30px;
+    line-height: 30px;
+    background-color: #4CAF50;
+    text-align: center;
+    color: white;
+}
+
 .upload-wrapper {
   background: #fff;
   width: 70%;

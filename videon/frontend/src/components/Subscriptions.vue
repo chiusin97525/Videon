@@ -4,7 +4,6 @@
             <thead>
                 <tr>
                     <td>Creator Name</td>
-                    <td>Creator Page</td>
                 </tr>
             </thead>
             <tbody v-if="creators.length == 0" is="transition-group" name="fade">

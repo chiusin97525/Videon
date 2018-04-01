@@ -16,13 +16,13 @@
                             <td>Date</td>
                         </tr>
                     </thead>
-                <tbody v-if="videoObjs.length == 0" is="transition-group" name="fade">
-                    <tr>
-                        <td><div class="table-value">None</div></td>
-                        <td><div class="table-value">None</div></td>
-                    </tr>
-                </tbody>
-                <tbody v-else is="transition-group" name="fade">
+                    <tbody v-if="videoObjs.length == 0" is="transition-group" name="fade">
+                        <tr>
+                            <td><div class="table-value">None</div></td>
+                            <td><div class="table-value">None</div></td>
+                        </tr>
+                    </tbody>
+                    <tbody v-else is="transition-group" name="fade">
                         <tr class="videos table-row" v-for="video in videoObjs" :key="video.url">
                             <td><div class="table-value">{{ video.title }}</div></td>
                             <td><div class="table-value">{{ convertDate(video.uploadDate) }}</div></td>
@@ -99,13 +99,11 @@ export default {
             return currentDate.slice(currentDate.indexOf(' '), currentDate.length);
         },
         loadVideo: function(videoObj) {
-            console.log(videoObj);
             var video = document.createElement('div');
             document.getElementById("video-container").innerHTML = `
-                <video width=1024 height=576 class="video-js vjs-default-skin video" controls>
+                <video width=1024 height=576 class="video-js vjs-default-skin video" controls autoplay>
                 <source
                     src="${videoObj.url}"
-                    type="video/mp4">
                 </video>
                 <div id="about_video"> 
                     <div id="current_title">${videoObj.title}</div>

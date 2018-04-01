@@ -77,10 +77,9 @@ export default {
         loadVideo: function(videoObj) {
             var video = document.createElement('div');
             document.getElementById("video-container").innerHTML = `
-                <video width=1024 height=576 class="video-js vjs-default-skin video" controls>
+                <video width=1024 height=576 class="video-js vjs-default-skin video" controls autoplay>
                 <source
                     src="${videoObj.url}"
-                    type="video/mp4">
                 </video>
                 <div id="about_video"> 
                     <div id="current_title">${videoObj.title}</div>
@@ -91,7 +90,6 @@ export default {
             `;
         },
         subscribe: function() {
-            console.log("what");
             api().get('/api/payment/subscribe/' + this.creator)
             .then(response => {
                 window.location.href = response.data;

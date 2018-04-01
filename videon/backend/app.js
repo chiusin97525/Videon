@@ -14,9 +14,10 @@ const cloudinary = require('cloudinary');
 const cors = require('cors');
 const paypal = require('paypal-rest-sdk');
 const schedule = require('node-schedule');
+const serveStatic = require('serve-static');
 
 const app = express();
-
+app.use(serveStatic(__dirname + "/dist"));
 // require custom modules
 const user = require('./user');
 const video = require('./video');

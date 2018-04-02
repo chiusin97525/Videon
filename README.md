@@ -3,6 +3,9 @@
 
 ## Videon
 The Web App URL: [https://videon.me](https://videon.me)
+- note: to use the paypal payment system, please use the following sandbox account
+  - email: videon-creator01@gmail.com
+  - password: creator1
 
 ### Team Members
 - Sin Chi Chiu

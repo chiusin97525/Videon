@@ -6,6 +6,8 @@ The Web App URL: [videon.me](https://videon.me)
 
 Web App Demo video : [Youtube](https://www.youtube.com/watch?v=pfXUJ99TYr8&feature=youtu.be)
 
+API Documentation : [wiki#API_Documentation](https://github.com/UTSCC09/blackbird/wiki#api-documentation)
+
 - note: to use the paypal payment system, please use the following sandbox account
   - email: videon-creator01@gmail.com
   - password: creator1
